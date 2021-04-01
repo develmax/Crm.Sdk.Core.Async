@@ -1,6 +1,6 @@
-# Crm.Sdk.Core
+# Crm.Sdk.Core.Async
 
-![Logo of the project](https://github.com/develmax/Crm.Sdk.Core/blob/master/Crm.Sdk.Core.Async.Package/icon.png)
+![Logo of the project](https://github.com/develmax/Crm.Sdk.Core.Async/blob/master/Crm.Sdk.Core.Async.Package/icon.png)
 
 [![CodeFactor](https://www.codefactor.io/repository/github/develmax/crm.sdk.core.async/badge)](https://www.codefactor.io/repository/github/develmax/crm.sdk.core.async)
 [![Travis build status](https://api.travis-ci.org/develmax/Crm.Sdk.Core.Async.svg?branch=master)](https://travis-ci.org/develmax/Crm.Sdk.Core.Async?branch=master)
