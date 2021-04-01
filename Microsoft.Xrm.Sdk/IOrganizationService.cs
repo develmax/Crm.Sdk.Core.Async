@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xrm.Sdk.Query;
 using System;
 using System.ServiceModel;
+using System.Threading.Tasks;
 
 namespace Microsoft.Xrm.Sdk
 {
@@ -15,7 +16,7 @@ namespace Microsoft.Xrm.Sdk
         /// <param name="entity">Type: <see cref="T:Microsoft.Xrm.Sdk.Entity"></see>. An entity instance that contains the properties to set in the newly created record.</param>
         [FaultContract(typeof(OrganizationServiceFault))]
         [OperationContract]
-        Guid Create(Entity entity);
+        Task<Guid> Create(Entity entity);
 
         /// <summary>Retrieves a record.</summary>
         /// <returns>Type: <see cref="T:Microsoft.Xrm.Sdk.Entity"></see>
@@ -25,27 +26,27 @@ namespace Microsoft.Xrm.Sdk
         /// <param name="entityName">Type: Returns_String. The logical name of the entity that is specified in the entityId parameter.</param>
         [FaultContract(typeof(OrganizationServiceFault))]
         [OperationContract]
-        Entity Retrieve(string entityName, Guid id, ColumnSet columnSet);
+        Task<Entity> Retrieve(string entityName, Guid id, ColumnSet columnSet);
 
         /// <summary>Updates an existing record.</summary>
         /// <param name="entity">Type: <see cref="T:Microsoft.Xrm.Sdk.Entity"></see>. An entity instance that has one or more properties set to be updated in the record.</param>
         [OperationContract]
         [FaultContract(typeof(OrganizationServiceFault))]
-        void Update(Entity entity);
+        Task Update(Entity entity);
 
         /// <summary>Deletes a record.</summary>
         /// <param name="id">Type: Returns_Guid. The ID of the record that you want to delete.</param>
         /// <param name="entityName">Type: Returns_String. The logical name of the entity that is specified in the entityId parameter.</param>
         [OperationContract]
         [FaultContract(typeof(OrganizationServiceFault))]
-        void Delete(string entityName, Guid id);
+        Task Delete(string entityName, Guid id);
 
         /// <summary>Executes a message in the form of a request, and returns a response.</summary>
         /// <returns>Type: <see cref="T:Microsoft.Xrm.Sdk.OrganizationResponse"></see>The response from the request. You must cast the return value of this method to the specific instance of the response that corresponds to the Request parameter.</returns>
         /// <param name="request">Type: <see cref="T:Microsoft.Xrm.Sdk.OrganizationRequest"></see>. A request instance that defines the action to be performed.</param>
         [FaultContract(typeof(OrganizationServiceFault))]
         [OperationContract]
-        OrganizationResponse Execute(OrganizationRequest request);
+        Task<OrganizationResponse> Execute(OrganizationRequest request);
 
         /// <summary>Creates a link between records.</summary>
         /// <param name="relatedEntities">Type: <see cref="T:Microsoft.Xrm.Sdk.EntityReferenceCollection"></see>. property_relatedentities to be associated.</param>
@@ -54,7 +55,7 @@ namespace Microsoft.Xrm.Sdk
         /// <param name="entityId">Type: Returns_Guid. property_entityid to which the related records are associated.</param>
         [OperationContract]
         [FaultContract(typeof(OrganizationServiceFault))]
-        void Associate(
+        Task Associate(
           string entityName,
           Guid entityId,
           Relationship relationship,
@@ -67,7 +68,7 @@ namespace Microsoft.Xrm.Sdk
         /// <param name="entityId">Type: Returns_Guid. The ID of the record from which the related records are disassociated.</param>
         [FaultContract(typeof(OrganizationServiceFault))]
         [OperationContract]
-        void Disassociate(
+        Task Disassociate(
           string entityName,
           Guid entityId,
           Relationship relationship,
@@ -78,6 +79,6 @@ namespace Microsoft.Xrm.Sdk
         /// <param name="query">Type: <see cref="T:Microsoft.Xrm.Sdk.Query.QueryBase"></see>. A query that determines the set of records to retrieve.</param>
         [OperationContract]
         [FaultContract(typeof(OrganizationServiceFault))]
-        EntityCollection RetrieveMultiple(QueryBase query);
+        Task<EntityCollection> RetrieveMultiple(QueryBase query);
     }
 }

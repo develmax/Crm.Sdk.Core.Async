@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Permissions;
+using System.Threading.Tasks;
 
 namespace Microsoft.Xrm.Sdk.Linq
 {
@@ -406,7 +407,11 @@ namespace Microsoft.Xrm.Sdk.Linq
       if (qe.PageInfo != null)
         nullable1 = new int?(qe.PageInfo.Count);
       bool moreRecordAfterAdjust = true;
-      EntityCollection entityCollection1 = !this.AdjustPagingInfo(request, qe, source, out moreRecordAfterAdjust) ? this.AdjustEntityCollection(request, qe, source) : (moreRecordAfterAdjust ? this.RetrieveEntityCollection(request, source) : new EntityCollection());
+      var adjustPagingInfo = this.AdjustPagingInfo(request, qe, source).GetAwaiter().GetResult();
+      moreRecordAfterAdjust = adjustPagingInfo.moreRecordAfterAdjust;
+      EntityCollection entityCollection1 = !adjustPagingInfo.Item1
+          ? this.AdjustEntityCollection(request, qe, source).GetAwaiter().GetResult() 
+          : (moreRecordAfterAdjust ? this.RetrieveEntityCollection(request, source).GetAwaiter().GetResult() : new EntityCollection());
       if (throwIfSequenceIsEmpty && (entityCollection1 == null || entityCollection1.Entities.Count == 0))
         this.ThrowException((Exception) new InvalidOperationException("Sequence contains no elements"));
       if (throwIfSequenceNotSingle && entityCollection1 != null && entityCollection1.Entities.Count > 1)
@@ -441,7 +446,7 @@ label_16:
           qe.PageInfo.PagingCookie = entityCollection2.PagingCookie;
           ++qe.PageInfo.PageNumber;
           qe.PageInfo.Count = qe.PageInfo.Count < this.RetrievalUpperLimitWithoutPagingCookie ? qe.PageInfo.Count : this.RetrievalUpperLimitWithoutPagingCookie;
-          entityCollection2 = this.RetrieveEntityCollection(request, source);
+          entityCollection2 = this.RetrieveEntityCollection(request, source).GetAwaiter().GetResult();
           if (entityCollection2 != null && entityCollection2.Entities.Count > 0)
           {
             pagingCookie = entityCollection2.PagingCookie;
@@ -457,7 +462,7 @@ label_16:
       return projection != null ? this.ExecuteAnonymousType(entities, projection, linkLookups) : (IEnumerable) entities.Select<Entity, Entity>(new Func<Entity, Entity>(this.AttachToContext));
     }
 
-    private EntityCollection RetrieveEntityCollection(
+    private async Task<EntityCollection> RetrieveEntityCollection(
       OrganizationRequest request,
       QueryProvider.NavigationSource source)
     {
@@ -466,11 +471,11 @@ label_16:
       EntityCollection entityCollection;
       if (source != null)
       {
-        RetrieveResponse retrieveResponse = this._context.Execute(request) as RetrieveResponse;
+        RetrieveResponse retrieveResponse = await this._context.Execute(request) as RetrieveResponse;
         entityCollection = retrieveResponse.Entity.RelatedEntities.Contains(source.Relationship) ? retrieveResponse.Entity.RelatedEntities[source.Relationship] : (EntityCollection) null;
       }
       else
-        entityCollection = (this._context.Execute(request) as RetrieveMultipleResponse).EntityCollection;
+        entityCollection = (await this._context.Execute(request) as RetrieveMultipleResponse).EntityCollection;
       return entityCollection;
     }
 
@@ -502,15 +507,14 @@ label_16:
       return entityCollection != null && string.IsNullOrEmpty(entityCollection.PagingCookie);
     }
 
-    private bool AdjustPagingInfo(
+    private async Task<(bool, bool moreRecordAfterAdjust)> AdjustPagingInfo(
       OrganizationRequest request,
       QueryExpression qe,
-      QueryProvider.NavigationSource source,
-      out bool moreRecordAfterAdjust)
+      QueryProvider.NavigationSource source)
     {
-      moreRecordAfterAdjust = true;
+      var moreRecordAfterAdjust = true;
       if (request == null || qe == null || (qe.PageInfo == null || !string.IsNullOrEmpty(qe.PageInfo.PagingCookie)))
-        return true;
+        return (true, moreRecordAfterAdjust);
       PagingInfo pageInfo = qe.PageInfo;
       EntityCollection entityCollection = (EntityCollection) null;
       int pageNumber = pageInfo.PageNumber;
@@ -525,34 +529,34 @@ label_16:
           for (int index = 0; index < num2; ++index)
           {
             QueryProvider.ResetPagingInfo(pageInfo, entityCollection == null ? (string) null : entityCollection.PagingCookie, this.RetrievalUpperLimitWithoutPagingCookie);
-            entityCollection = this.RetrieveEntityCollection(request, source);
+            entityCollection = await this.RetrieveEntityCollection(request, source);
             if (QueryProvider.IsPagingCookieNull(entityCollection))
             {
               pageInfo.PageNumber = pageNumber;
               pageInfo.Count = num1;
-              return false;
+              return (false, moreRecordAfterAdjust);
             }
             if (entityCollection != null && !entityCollection.MoreRecords)
             {
               moreRecordAfterAdjust = false;
-              return true;
+              return (true, moreRecordAfterAdjust);
             }
           }
         }
         if (skipValue > 0 && !QueryProvider.IsPagingCookieNull(entityCollection))
         {
           QueryProvider.ResetPagingInfo(pageInfo, entityCollection == null ? (string) null : entityCollection.PagingCookie, skipValue);
-          entityCollection = this.RetrieveEntityCollection(request, source);
+          entityCollection = await this.RetrieveEntityCollection(request, source);
           if (QueryProvider.IsPagingCookieNull(entityCollection))
           {
             pageInfo.PageNumber = pageNumber;
             pageInfo.Count = num1;
-            return false;
+            return (false, moreRecordAfterAdjust);
           }
           if (entityCollection != null && !entityCollection.MoreRecords)
           {
             moreRecordAfterAdjust = false;
-            return true;
+            return (true, moreRecordAfterAdjust);
           }
         }
         pageInfo.PagingCookie = QueryProvider.ResetPagingNumber(entityCollection.PagingCookie, 1);
@@ -561,10 +565,10 @@ label_16:
       }
       if (pageInfo.PageNumber == 0)
         pageInfo.PageNumber = 1;
-      return true;
+      return (true, moreRecordAfterAdjust);
     }
 
-    private EntityCollection AdjustEntityCollection(
+    private async Task<EntityCollection> AdjustEntityCollection(
       OrganizationRequest request,
       QueryExpression qe,
       QueryProvider.NavigationSource source)
@@ -579,7 +583,7 @@ label_16:
       pageInfo.PageNumber = 1;
       if (count > 0)
         pageInfo.Count = pageNumber + count > this.RetrievalUpperLimitWithoutPagingCookie ? this.RetrievalUpperLimitWithoutPagingCookie : pageNumber + count;
-      EntityCollection entityCollection1 = this.RetrieveEntityCollection(request, source);
+      EntityCollection entityCollection1 = await this.RetrieveEntityCollection(request, source);
       if (entityCollection1 != null && !string.IsNullOrEmpty(entityCollection1.PagingCookie))
         this.ThrowException((Exception) new InvalidOperationException("Queries with valid paging cookie should not be executed in this strategy"));
       if (pageNumber <= 0)

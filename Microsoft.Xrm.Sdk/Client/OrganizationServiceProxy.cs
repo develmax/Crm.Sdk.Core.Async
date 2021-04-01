@@ -7,6 +7,7 @@ using System.Security.Permissions;
 using System.ServiceModel;
 using System.ServiceModel.Description;
 using System.ServiceModel.Security;
+using System.Threading.Tasks;
 
 namespace Microsoft.Xrm.Sdk.Client
 {
@@ -138,9 +139,15 @@ namespace Microsoft.Xrm.Sdk.Client
             return this._xrmSdkAssemblyFileVersion;
         }
 
+        private Task<Guid> CreateCoreWithContext(Entity entity)
+        {
+            using (new OrganizationServiceContextInitializer(this))
+                return this.ServiceChannel.Channel.Create(entity);
+        }
+
         /// <summary>internal</summary>
         /// <returns>Type: Returns_GuidThe ID of the created entity.</returns>
-        protected internal virtual Guid CreateCore(Entity entity)
+        protected internal virtual async Task<Guid> CreateCore(Entity entity)
         {
             bool? retry = new bool?();
             do
@@ -148,8 +155,7 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    using (new OrganizationServiceContextInitializer(this))
-                        return this.ServiceChannel.Channel.Create(entity);
+                    return await CreateCoreWithContext(entity);
                 }
                 catch (MessageSecurityException ex)
                 {
@@ -193,9 +199,18 @@ namespace Microsoft.Xrm.Sdk.Client
             return Guid.Empty;
         }
 
+        private Task<Entity> RetrieveCoreWithContext(
+            string entityName,
+            Guid id,
+            ColumnSet columnSet)
+        {
+            using (new OrganizationServiceContextInitializer(this))
+                return this.ServiceChannel.Channel.Retrieve(entityName, id, columnSet);
+        }
+
         /// <summary>internal</summary>
         /// <returns>Type:  <see cref="T:Microsoft.Xrm.Sdk.Entity"></see>.</returns>
-        protected internal virtual Entity RetrieveCore(
+        protected internal virtual async Task<Entity> RetrieveCore(
           string entityName,
           Guid id,
           ColumnSet columnSet)
@@ -206,8 +221,7 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    using (new OrganizationServiceContextInitializer(this))
-                        return this.ServiceChannel.Channel.Retrieve(entityName, id, columnSet);
+                    return await RetrieveCoreWithContext(entityName, id, columnSet);
                 }
                 catch (MessageSecurityException ex)
                 {
@@ -251,8 +265,16 @@ namespace Microsoft.Xrm.Sdk.Client
             return (Entity)null;
         }
 
+        private Task UpdateCoreWithContext(Entity entity)
+        {
+            using (new OrganizationServiceContextInitializer(this))
+            {
+                return this.ServiceChannel.Channel.Update(entity);
+            }
+        }
+
         /// <summary>internal</summary>
-        protected internal virtual void UpdateCore(Entity entity)
+        protected virtual async Task UpdateCore(Entity entity)
         {
             bool? retry = new bool?();
             do
@@ -260,11 +282,8 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    using (new OrganizationServiceContextInitializer(this))
-                    {
-                        this.ServiceChannel.Channel.Update(entity);
-                        break;
-                    }
+                    await UpdateCoreWithContext(entity);
+                    break;
                 }
                 catch (MessageSecurityException ex)
                 {
@@ -307,8 +326,16 @@ namespace Microsoft.Xrm.Sdk.Client
             while (retry.HasValue && retry.Value);
         }
 
+        private Task DeleteCoreWithContext(string entityName, Guid id)
+        {
+            using (new OrganizationServiceContextInitializer(this))
+            {
+                return this.ServiceChannel.Channel.Delete(entityName, id);
+            }
+        }
+
         /// <summary>internal</summary>
-        protected internal virtual void DeleteCore(string entityName, Guid id)
+        protected internal virtual async Task DeleteCore(string entityName, Guid id)
         {
             bool? retry = new bool?();
             do
@@ -316,11 +343,8 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    using (new OrganizationServiceContextInitializer(this))
-                    {
-                        this.ServiceChannel.Channel.Delete(entityName, id);
-                        break;
-                    }
+                    await DeleteCoreWithContext(entityName, id);
+                    break;
                 }
                 catch (MessageSecurityException ex)
                 {
@@ -361,11 +385,18 @@ namespace Microsoft.Xrm.Sdk.Client
                 }
             }
             while (retry.HasValue && retry.Value);
+        }
+
+        private Task<OrganizationResponse> ExecuteCoreWithContext(
+            OrganizationRequest request)
+        {
+            using (new OrganizationServiceContextInitializer(this))
+                return this.ServiceChannel.Channel.Execute(request);
         }
 
         /// <summary>internal</summary>
         /// <returns>Type: <see cref="T:Microsoft.Xrm.Sdk.OrganizationResponse"></see>.</returns>
-        protected internal virtual OrganizationResponse ExecuteCore(
+        protected internal virtual async Task<OrganizationResponse> ExecuteCore(
           OrganizationRequest request)
         {
             bool? retry = new bool?();
@@ -374,8 +405,7 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    using (new OrganizationServiceContextInitializer(this))
-                        return this.ServiceChannel.Channel.Execute(request);
+                    return await ExecuteCoreWithContext(request);
                 }
                 catch (MessageSecurityException ex)
                 {
@@ -419,8 +449,20 @@ namespace Microsoft.Xrm.Sdk.Client
             return (OrganizationResponse)null;
         }
 
+        private Task AssociateCoreWithContext(
+            string entityName,
+            Guid entityId,
+            Relationship relationship,
+            EntityReferenceCollection relatedEntities)
+        {
+            using (new OrganizationServiceContextInitializer(this))
+            {
+                return this.ServiceChannel.Channel.Associate(entityName, entityId, relationship, relatedEntities);
+            }
+        }
+
         /// <summary>internal</summary>
-        protected internal virtual void AssociateCore(
+        protected internal virtual async Task AssociateCore(
           string entityName,
           Guid entityId,
           Relationship relationship,
@@ -432,11 +474,8 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    using (new OrganizationServiceContextInitializer(this))
-                    {
-                        this.ServiceChannel.Channel.Associate(entityName, entityId, relationship, relatedEntities);
-                        break;
-                    }
+                    await AssociateCoreWithContext(entityName, entityId, relationship, relatedEntities);
+                    break;
                 }
                 catch (MessageSecurityException ex)
                 {
@@ -479,8 +518,20 @@ namespace Microsoft.Xrm.Sdk.Client
             while (retry.HasValue && retry.Value);
         }
 
+        private Task DisassociateCoreWithContext(
+            string entityName,
+            Guid entityId,
+            Relationship relationship,
+            EntityReferenceCollection relatedEntities)
+        {
+            using (new OrganizationServiceContextInitializer(this))
+            {
+                return this.ServiceChannel.Channel.Disassociate(entityName, entityId, relationship, relatedEntities);
+            }
+        }
+
         /// <summary>internal</summary>
-        protected internal virtual void DisassociateCore(
+        protected internal virtual async Task DisassociateCore(
           string entityName,
           Guid entityId,
           Relationship relationship,
@@ -492,11 +543,8 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    using (new OrganizationServiceContextInitializer(this))
-                    {
-                        this.ServiceChannel.Channel.Disassociate(entityName, entityId, relationship, relatedEntities);
-                        break;
-                    }
+                    await DisassociateCoreWithContext(entityName, entityId, relationship, relatedEntities);
+                    break;
                 }
                 catch (MessageSecurityException ex)
                 {
@@ -537,11 +585,19 @@ namespace Microsoft.Xrm.Sdk.Client
                 }
             }
             while (retry.HasValue && retry.Value);
+        }
+
+        private Task<EntityCollection> RetrieveMultipleCoreWithContext(QueryBase query)
+        {
+            using (new OrganizationServiceContextInitializer(this))
+            {
+                return this.ServiceChannel.Channel.RetrieveMultiple(query);
+            }
         }
 
         /// <summary>internal</summary>
         /// <returns>Type:  <see cref="T:Microsoft.Xrm.Sdk.EntityCollection"></see>.</returns>
-        protected internal virtual EntityCollection RetrieveMultipleCore(QueryBase query)
+        protected internal async virtual Task<EntityCollection> RetrieveMultipleCore(QueryBase query)
         {
             bool? retry = new bool?();
             do
@@ -549,8 +605,7 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    using (new OrganizationServiceContextInitializer(this))
-                        return this.ServiceChannel.Channel.RetrieveMultiple(query);
+                    return await RetrieveMultipleCoreWithContext(query);
                 }
                 catch (MessageSecurityException ex)
                 {
@@ -580,7 +635,7 @@ namespace Microsoft.Xrm.Sdk.Client
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
-                catch
+                catch(Exception aa)
                 {
                     forceClose = true;
                     throw;
@@ -597,7 +652,7 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <summary>Creates a record.</summary>
         /// <returns>Type: Returns_GuidThe ID of the created entity.</returns>
         /// <param name="entity">Type: <see cref="T:Microsoft.Xrm.Sdk.Entity"></see>. An entity instance that contains the properties to set in the newly created record.</param>
-        public Guid Create(Entity entity)
+        public Task<Guid> Create(Entity entity)
         {
             return this.CreateCore(entity);
         }
@@ -607,30 +662,30 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="id">Type: Returns_Guid. The ID of the record you want to retrieve.</param>
         /// <param name="columnSet">Type: <see cref="T:Microsoft.Xrm.Sdk.Query.ColumnSet"></see>. A query that specifies the set of columns, or attributes, to retrieve.</param>
         /// <param name="entityName">Type: Returns_String. The logical name of the entity specified in the entityId parameter.</param>
-        public Entity Retrieve(string entityName, Guid id, ColumnSet columnSet)
+        public Task<Entity> Retrieve(string entityName, Guid id, ColumnSet columnSet)
         {
             return this.RetrieveCore(entityName, id, columnSet);
         }
 
         /// <summary>Updates an existing record.</summary>
         /// <param name="entity">Type: <see cref="T:Microsoft.Xrm.Sdk.Entity"></see>. An entity instance that has one or more properties set to be updated in the record.</param>
-        public void Update(Entity entity)
+        public Task Update(Entity entity)
         {
-            this.UpdateCore(entity);
+            return this.UpdateCore(entity);
         }
 
         /// <summary>Deletes a record.</summary>
         /// <param name="id">Type: Returns_Guid. The ID of the record of the record to delete.</param>
         /// <param name="entityName">Type: Returns_String. The logical name of the entity specified in the entityId parameter.</param>
-        public void Delete(string entityName, Guid id)
+        public Task Delete(string entityName, Guid id)
         {
-            this.DeleteCore(entityName, id);
+            return this.DeleteCore(entityName, id);
         }
 
         /// <summary>Executes a message in the form of a request, and returns a response.</summary>
         /// <returns>Type: <see cref="T:Microsoft.Xrm.Sdk.OrganizationResponse"></see>. You must cast the return value of this method to the specific instance of the response that corresponds to the Request parameter.</returns>
         /// <param name="request">Type: <see cref="T:Microsoft.Xrm.Sdk.OrganizationRequest"></see>. An instance of a request class that defines the action to be performed.</param>
-        public OrganizationResponse Execute(OrganizationRequest request)
+        public Task<OrganizationResponse> Execute(OrganizationRequest request)
         {
             return this.ExecuteCore(request);
         }
@@ -640,13 +695,13 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="relationship">Type: <see cref="T:Microsoft.Xrm.Sdk.Relationship"></see>. The name of the relationship to be used to create the link.</param>
         /// <param name="entityName">Type: Returns_String. The logical name of the entity specified in the entityId parameter.</param>
         /// <param name="entityId">Type: Returns_Guid. The ID of the record to which the related records will be associated.</param>
-        public void Associate(
+        public Task Associate(
           string entityName,
           Guid entityId,
           Relationship relationship,
           EntityReferenceCollection relatedEntities)
         {
-            this.AssociateCore(entityName, entityId, relationship, relatedEntities);
+            return this.AssociateCore(entityName, entityId, relationship, relatedEntities);
         }
 
         /// <summary>Deletes a link between records. </summary>
@@ -654,19 +709,19 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="relationship">Type: <see cref="T:Microsoft.Xrm.Sdk.Relationship"></see>. The name of the relationship to be used to remove the link.</param>
         /// <param name="entityName">Type: Returns_String. The logical name of the entity specified in the entityId parameter.</param>
         /// <param name="entityId">Type: Returns_Guid. The ID of the record from which the related records will be disassociated.</param>
-        public void Disassociate(
+        public Task Disassociate(
           string entityName,
           Guid entityId,
           Relationship relationship,
           EntityReferenceCollection relatedEntities)
         {
-            this.DisassociateCore(entityName, entityId, relationship, relatedEntities);
+            return this.DisassociateCore(entityName, entityId, relationship, relatedEntities);
         }
 
         /// <summary>Retrieves a collection of records.</summary>
         /// <returns>Type:  <see cref="T:Microsoft.Xrm.Sdk.EntityCollection"></see>.A collection of entity records.</returns>
         /// <param name="query">Type: <see cref="T:Microsoft.Xrm.Sdk.Query.QueryBase"></see>. A query that determines the set of records to retrieve.</param>
-        public EntityCollection RetrieveMultiple(QueryBase query)
+        public Task<EntityCollection> RetrieveMultiple(QueryBase query)
         {
             return this.RetrieveMultipleCore(query);
         }

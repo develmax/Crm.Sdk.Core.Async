@@ -1,4 +1,5 @@
 ﻿using System.ServiceModel;
+using System.Threading.Tasks;
 
 namespace Microsoft.Xrm.Sdk.Discovery
 {
@@ -12,6 +13,6 @@ namespace Microsoft.Xrm.Sdk.Discovery
         /// <param name="request">Type: <see cref="T:Microsoft.Xrm.Sdk.Discovery.DiscoveryRequest"></see>. A request instance that defines the action to be performed.</param>
         [OperationContract]
         [FaultContract(typeof(DiscoveryServiceFault))]
-        DiscoveryResponse Execute(DiscoveryRequest request);
+        Task<DiscoveryResponse> Execute(DiscoveryRequest request);
     }
 }

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.1209
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31112.23
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Xrm.Sdk", "Microsoft.Xrm.Sdk\Microsoft.Xrm.Sdk.csproj", "{91C47A41-7295-4D09-BB11-770CF0050094}"
 EndProject
@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Crm.Sdk.Core.Async.Test", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Crm.Sdk.Core.Async.Package", "Crm.Sdk.Core.Async.Package\Crm.Sdk.Core.Async.Package.csproj", "{428E9C5B-8552-442F-9A07-FB9390A649D5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Crm.Sdk.Proxy", "Microsoft.Crm.Sdk.Proxy\Microsoft.Crm.Sdk.Proxy.csproj", "{EB6FBE18-7BCC-4F71-A454-D635BAE47C26}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Crm.Sdk.Proxy", "Microsoft.Crm.Sdk.Proxy\Microsoft.Crm.Sdk.Proxy.csproj", "{EB6FBE18-7BCC-4F71-A454-D635BAE47C26}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

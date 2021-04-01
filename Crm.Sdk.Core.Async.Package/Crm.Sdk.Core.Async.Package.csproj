@@ -6,6 +6,7 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NuspecFile>Crm.Sdk.Core.Async.Package.nuspec</NuspecFile>
     <PackageLicenseFile>License</PackageLicenseFile>
+    <LangVersion>8</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
