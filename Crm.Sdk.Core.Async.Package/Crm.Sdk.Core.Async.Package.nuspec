@@ -1,17 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
-    <id>Crm.Sdk.Core.Async</id>
-    <version>1.0.7</version>
+    <id>Crm.Sdk.Core</id>
+    <version>2.0.7</version>
     <authors>Maksim Moiseev</authors>
     <!--<license type="expression">MIT</license>-->
-    <licenseUrl>https://github.com/develmax/Crm.Sdk.Core.Async/blob/master/LICENSE.md</licenseUrl>
+    <!--<licenseUrl>https://github.com/develmax/Crm.Sdk.Core.Async/blob/master/LICENSE.md</licenseUrl>-->
+    <license type="file">licenses\license.txt</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
     <owners>develmax</owners>
-    <!--<icon>images\icon.png</icon>-->
-    <iconUrl>https://github.com/develmax/Crm.Sdk.Core.Async/blob/master/Crm.Sdk.Core.Async.Package/icon.png</iconUrl>
+    <icon>images\icon.png</icon>
+    <!--<iconUrl>https://github.com/develmax/Crm.Sdk.Core.Async/blob/master/Crm.Sdk.Core.Async.Package/icon.png</iconUrl>-->
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <description>Microsoft CRM through SDK for .NET Core (with async code)</description>
-    <releaseNotes>Release package (added missed class in Microsoft.Xrm.Sdk)</releaseNotes>
+    <releaseNotes>Release package (publish async code)</releaseNotes>
     <tags>dynamics crm sdk core</tags>
     <repository type="git" url="https://github.com/develmax/Crm.Sdk.Core.Async.git" />
     <projectUrl>https://github.com/develmax/Crm.Sdk.Core.Async</projectUrl>
@@ -27,5 +29,6 @@
     <file src="bin\Release\netcoreapp2.1\Microsoft.Crm.Core.dll" target="lib\netcoreapp2.1\Microsoft.Crm.Core.dll" />
     <file src="bin\Release\netcoreapp2.1\Microsoft.Crm.Sdk.Proxy.dll" target="lib\netcoreapp2.1\Microsoft.Crm.Sdk.Proxy.dll" />
     <file src="icon.png" target="images\" />
+    <file src="license.txt" target="licenses\" />
   </files>
 </package>
