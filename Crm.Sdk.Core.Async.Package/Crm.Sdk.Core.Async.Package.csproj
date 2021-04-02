@@ -7,7 +7,6 @@
     <NuspecFile>Crm.Sdk.Core.Async.Package.nuspec</NuspecFile>
     <PackageLicenseFile>license.txt</PackageLicenseFile>
     <PackageIcon>icon.png</PackageIcon>
-    <LangVersion>8</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
