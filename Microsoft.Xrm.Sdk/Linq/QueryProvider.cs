@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Permissions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Xrm.Sdk.Linq
@@ -312,18 +313,18 @@ namespace Microsoft.Xrm.Sdk.Linq
     TResult IQueryProvider.Execute<TResult>(Expression expression)
     {
       ClientExceptionHelper.ThrowIfNull((object) expression, nameof (expression));
-      return this.Execute<TResult>(expression).FirstOrDefault<TResult>();
+      return this.Execute<TResult>(expression, CancellationToken.None).FirstOrDefault<TResult>();
     }
 
     object IQueryProvider.Execute(Expression expression)
     {
       ClientExceptionHelper.ThrowIfNull((object) expression, nameof (expression));
-      return this.Execute<object>(expression).FirstOrDefault<object>();
+      return this.Execute<object>(expression, CancellationToken.None).FirstOrDefault<object>();
     }
 
     public virtual IEnumerator<TElement> GetEnumerator<TElement>(Expression expression)
     {
-      return this.Execute<TElement>(expression).GetEnumerator();
+      return this.Execute<TElement>(expression, CancellationToken.None).GetEnumerator();
     }
 
     private IQueryable CreateQueryInstance(Type elementType, object[] args)
@@ -348,14 +349,14 @@ namespace Microsoft.Xrm.Sdk.Linq
       this.ThrowException((Exception) new ArgumentException(string.Format((IFormatProvider) CultureInfo.InvariantCulture, "The specified type '{0}' is not a known entity type.", (object) entityType)));
     }
 
-    public IEnumerable<TElement> Execute<TElement>(Expression expression)
+    public IEnumerable<TElement> Execute<TElement>(Expression expression, CancellationToken cancellationToken)
     {
       QueryProvider.NavigationSource source = (QueryProvider.NavigationSource) null;
       List<QueryProvider.LinkLookup> linkLookups = new List<QueryProvider.LinkLookup>();
       bool throwIfSequenceIsEmpty;
       bool throwIfSequenceNotSingle;
       QueryProvider.Projection projection;
-      return this.Execute<TElement>(this.GetQueryExpression(expression, out throwIfSequenceIsEmpty, out throwIfSequenceNotSingle, out projection, ref source, ref linkLookups), throwIfSequenceIsEmpty, throwIfSequenceNotSingle, projection, source, linkLookups);
+      return this.Execute<TElement>(this.GetQueryExpression(expression, out throwIfSequenceIsEmpty, out throwIfSequenceNotSingle, out projection, ref source, ref linkLookups), throwIfSequenceIsEmpty, throwIfSequenceNotSingle, projection, source, linkLookups, cancellationToken);
     }
 
     [SuppressMessage("Microsoft.Usage", "CA9888:DisposeObjectsCorrectly", Justification = "The enumerator will be disposed by the calling method.")]
@@ -365,11 +366,12 @@ namespace Microsoft.Xrm.Sdk.Linq
       bool throwIfSequenceNotSingle,
       QueryProvider.Projection projection,
       QueryProvider.NavigationSource source,
-      List<QueryProvider.LinkLookup> linkLookups)
+      List<QueryProvider.LinkLookup> linkLookups,
+      CancellationToken cancellationToken)
     {
       string pagingCookie = (string) null;
       bool moreRecords = false;
-      return (IEnumerable<TElement>) new PagedItemCollection<TElement>(this.Execute(qe, throwIfSequenceIsEmpty, throwIfSequenceNotSingle, projection, source, linkLookups, out pagingCookie, out moreRecords).Cast<TElement>(), qe, pagingCookie, moreRecords);
+      return (IEnumerable<TElement>) new PagedItemCollection<TElement>(this.Execute(qe, throwIfSequenceIsEmpty, throwIfSequenceNotSingle, projection, source, linkLookups, cancellationToken, out pagingCookie, out moreRecords).Cast<TElement>(), qe, pagingCookie, moreRecords);
     }
 
     private IEnumerable Execute(
@@ -379,6 +381,7 @@ namespace Microsoft.Xrm.Sdk.Linq
       QueryProvider.Projection projection,
       QueryProvider.NavigationSource source,
       List<QueryProvider.LinkLookup> linkLookups,
+      CancellationToken cancellationToken,
       out string pagingCookie,
       out bool moreRecords)
     {
@@ -407,11 +410,11 @@ namespace Microsoft.Xrm.Sdk.Linq
       if (qe.PageInfo != null)
         nullable1 = new int?(qe.PageInfo.Count);
       bool moreRecordAfterAdjust = true;
-      var adjustPagingInfo = this.AdjustPagingInfo(request, qe, source).GetAwaiter().GetResult();
+      var adjustPagingInfo = this.AdjustPagingInfoAsync(request, qe, source, cancellationToken).GetAwaiter().GetResult();
       moreRecordAfterAdjust = adjustPagingInfo.moreRecordAfterAdjust;
       EntityCollection entityCollection1 = !adjustPagingInfo.Item1
-          ? this.AdjustEntityCollection(request, qe, source).GetAwaiter().GetResult() 
-          : (moreRecordAfterAdjust ? this.RetrieveEntityCollection(request, source).GetAwaiter().GetResult() : new EntityCollection());
+          ? this.AdjustEntityCollectionAsync(request, qe, source, cancellationToken).GetAwaiter().GetResult() 
+          : (moreRecordAfterAdjust ? this.RetrieveEntityCollectionAsync(request, source, cancellationToken).GetAwaiter().GetResult() : new EntityCollection());
       if (throwIfSequenceIsEmpty && (entityCollection1 == null || entityCollection1.Entities.Count == 0))
         this.ThrowException((Exception) new InvalidOperationException("Sequence contains no elements"));
       if (throwIfSequenceNotSingle && entityCollection1 != null && entityCollection1.Entities.Count > 1)
@@ -446,7 +449,7 @@ label_16:
           qe.PageInfo.PagingCookie = entityCollection2.PagingCookie;
           ++qe.PageInfo.PageNumber;
           qe.PageInfo.Count = qe.PageInfo.Count < this.RetrievalUpperLimitWithoutPagingCookie ? qe.PageInfo.Count : this.RetrievalUpperLimitWithoutPagingCookie;
-          entityCollection2 = this.RetrieveEntityCollection(request, source).GetAwaiter().GetResult();
+          entityCollection2 = this.RetrieveEntityCollectionAsync(request, source, cancellationToken).GetAwaiter().GetResult();
           if (entityCollection2 != null && entityCollection2.Entities.Count > 0)
           {
             pagingCookie = entityCollection2.PagingCookie;
@@ -462,20 +465,21 @@ label_16:
       return projection != null ? this.ExecuteAnonymousType(entities, projection, linkLookups) : (IEnumerable) entities.Select<Entity, Entity>(new Func<Entity, Entity>(this.AttachToContext));
     }
 
-    private async Task<EntityCollection> RetrieveEntityCollection(
+    private async Task<EntityCollection> RetrieveEntityCollectionAsync(
       OrganizationRequest request,
-      QueryProvider.NavigationSource source)
+      QueryProvider.NavigationSource source,
+      CancellationToken cancellationToken)
     {
       if (request == null || string.IsNullOrEmpty(request.RequestName) || !(request.RequestName == "Retrieve") && !(request.RequestName == "RetrieveMultiple"))
         this.ThrowException((Exception) new ArgumentException("Invalid request", nameof (request)));
       EntityCollection entityCollection;
       if (source != null)
       {
-        RetrieveResponse retrieveResponse = await this._context.Execute(request) as RetrieveResponse;
+        RetrieveResponse retrieveResponse = await this._context.ExecuteAsync(request, cancellationToken) as RetrieveResponse;
         entityCollection = retrieveResponse.Entity.RelatedEntities.Contains(source.Relationship) ? retrieveResponse.Entity.RelatedEntities[source.Relationship] : (EntityCollection) null;
       }
       else
-        entityCollection = (await this._context.Execute(request) as RetrieveMultipleResponse).EntityCollection;
+        entityCollection = (await this._context.ExecuteAsync(request, cancellationToken) as RetrieveMultipleResponse).EntityCollection;
       return entityCollection;
     }
 
@@ -507,10 +511,11 @@ label_16:
       return entityCollection != null && string.IsNullOrEmpty(entityCollection.PagingCookie);
     }
 
-    private async Task<(bool, bool moreRecordAfterAdjust)> AdjustPagingInfo(
+    private async Task<(bool, bool moreRecordAfterAdjust)> AdjustPagingInfoAsync(
       OrganizationRequest request,
       QueryExpression qe,
-      QueryProvider.NavigationSource source)
+      QueryProvider.NavigationSource source,
+      CancellationToken cancellationToken)
     {
       var moreRecordAfterAdjust = true;
       if (request == null || qe == null || (qe.PageInfo == null || !string.IsNullOrEmpty(qe.PageInfo.PagingCookie)))
@@ -529,7 +534,7 @@ label_16:
           for (int index = 0; index < num2; ++index)
           {
             QueryProvider.ResetPagingInfo(pageInfo, entityCollection == null ? (string) null : entityCollection.PagingCookie, this.RetrievalUpperLimitWithoutPagingCookie);
-            entityCollection = await this.RetrieveEntityCollection(request, source);
+            entityCollection = await this.RetrieveEntityCollectionAsync(request, source, cancellationToken);
             if (QueryProvider.IsPagingCookieNull(entityCollection))
             {
               pageInfo.PageNumber = pageNumber;
@@ -546,7 +551,7 @@ label_16:
         if (skipValue > 0 && !QueryProvider.IsPagingCookieNull(entityCollection))
         {
           QueryProvider.ResetPagingInfo(pageInfo, entityCollection == null ? (string) null : entityCollection.PagingCookie, skipValue);
-          entityCollection = await this.RetrieveEntityCollection(request, source);
+          entityCollection = await this.RetrieveEntityCollectionAsync(request, source, cancellationToken);
           if (QueryProvider.IsPagingCookieNull(entityCollection))
           {
             pageInfo.PageNumber = pageNumber;
@@ -568,10 +573,11 @@ label_16:
       return (true, moreRecordAfterAdjust);
     }
 
-    private async Task<EntityCollection> AdjustEntityCollection(
+    private async Task<EntityCollection> AdjustEntityCollectionAsync(
       OrganizationRequest request,
       QueryExpression qe,
-      QueryProvider.NavigationSource source)
+      QueryProvider.NavigationSource source,
+      CancellationToken cancellationToken)
     {
       if (request == null || qe == null || (qe.PageInfo == null || !string.IsNullOrEmpty(qe.PageInfo.PagingCookie)))
         return new EntityCollection();
@@ -583,7 +589,7 @@ label_16:
       pageInfo.PageNumber = 1;
       if (count > 0)
         pageInfo.Count = pageNumber + count > this.RetrievalUpperLimitWithoutPagingCookie ? this.RetrievalUpperLimitWithoutPagingCookie : pageNumber + count;
-      EntityCollection entityCollection1 = await this.RetrieveEntityCollection(request, source);
+      EntityCollection entityCollection1 = await this.RetrieveEntityCollectionAsync(request, source, cancellationToken);
       if (entityCollection1 != null && !string.IsNullOrEmpty(entityCollection1.PagingCookie))
         this.ThrowException((Exception) new InvalidOperationException("Queries with valid paging cookie should not be executed in this strategy"));
       if (pageNumber <= 0)

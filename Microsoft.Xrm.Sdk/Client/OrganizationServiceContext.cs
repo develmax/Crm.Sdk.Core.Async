@@ -11,6 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security;
 using System.Security.Permissions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Xrm.Sdk.Client
@@ -98,7 +99,8 @@ namespace Microsoft.Xrm.Sdk.Client
     /// <summary>Loads deferred content for a specified property from the Web service.</summary>
     /// <param name="entity">Type: <see cref="T:Microsoft.Xrm.Sdk.Entity"></see>. The entity that contains the property to load.</param>
     /// <param name="propertyName">Type: Returns_String. The name of the property of the specified entity to load.</param>
-    public void LoadProperty(Entity entity, string propertyName)
+    /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param>
+    public async Task LoadPropertyAsync(Entity entity, string propertyName, CancellationToken cancellationToken)
     {
       if (entity == null)
         throw new ArgumentNullException(nameof (entity));
@@ -113,13 +115,13 @@ namespace Microsoft.Xrm.Sdk.Client
       if (defaultCustomAttribute1 != null)
       {
         Relationship relationship = defaultCustomAttribute1.Relationship;
-        this.LoadProperty(entity, relationship);
+        await this.LoadPropertyAsync(entity, relationship, cancellationToken);
       }
       else
       {
         AttributeLogicalNameAttribute defaultCustomAttribute2 = property.GetFirstOrDefaultCustomAttribute<AttributeLogicalNameAttribute>();
         if (defaultCustomAttribute2 != null)
-          this.LoadProperty(entity, defaultCustomAttribute2);
+          await this.LoadPropertyAsync(entity, defaultCustomAttribute2, cancellationToken);
         else
           throw new InvalidOperationException(string.Format((IFormatProvider) CultureInfo.InvariantCulture, "The closed type '{0}' does not have a corresponding '{1}' settable property.", (object) type, (object) propertyName));
       }
@@ -128,7 +130,8 @@ namespace Microsoft.Xrm.Sdk.Client
     /// <summary>Loads the related entity collection for the specified relationshp.</summary>
     /// <param name="entity">Type: <see cref="T:Microsoft.Xrm.Sdk.Entity"></see>. The entity with the relationship to be loaded.</param>
     /// <param name="relationship">Type: <see cref="T:Microsoft.Xrm.Sdk.Relationship"></see>. The name of the attribute or navigation property on the entity that represents the relationship to be retrieved.</param>
-    public async Task LoadProperty(Entity entity, Relationship relationship)
+    /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param>
+    public async Task LoadPropertyAsync(Entity entity, Relationship relationship, CancellationToken cancellationToken)
     {
       if (entity == null)
         throw new ArgumentNullException(nameof (entity));
@@ -145,7 +148,7 @@ namespace Microsoft.Xrm.Sdk.Client
       }
       else if (this.MergeOption != MergeOption.NoTracking)
         throw new InvalidOperationException(string.Format((IFormatProvider) CultureInfo.InvariantCulture, "The context can not load the related collection or reference for untracked entities while the 'MergeOption' is not set to 'NoTracking'. Change the 'MergeOption' to 'NoTracking' or attach the '{0}' entity.", (object) entity.LogicalName));
-      EntityCollection relatedEntities = await this.GetRelatedEntities(entity, relationship);
+      EntityCollection relatedEntities = await this.GetRelatedEntitiesAsync(entity, relationship, cancellationToken);
       if (relatedEntities == null)
         return;
       foreach (Entity entity1 in (Collection<Entity>) relatedEntities.Entities)
@@ -155,19 +158,19 @@ namespace Microsoft.Xrm.Sdk.Client
       }
     }
 
-    private async Task LoadProperty(Entity entity, AttributeLogicalNameAttribute attribute)
+    private async Task LoadPropertyAsync(Entity entity, AttributeLogicalNameAttribute attribute, CancellationToken cancellationToken)
     {
       if (this.MergeOption != MergeOption.NoTracking && this.EnsureTracked(entity, nameof (entity)).State == EntityStates.Added)
         throw new InvalidOperationException("The context can not load the related collection or reference for entities in the added state.");
       string logicalName = attribute.LogicalName;
-      RetrieveResponse retrieveResponse = (RetrieveResponse) await this.Execute((OrganizationRequest) new RetrieveRequest()
+      RetrieveResponse retrieveResponse = (RetrieveResponse) await this.ExecuteAsync((OrganizationRequest) new RetrieveRequest()
       {
         Target = new EntityReference(entity.LogicalName, entity.Id),
         ColumnSet = new ColumnSet(new string[1]
         {
           logicalName
         })
-      });
+      }, cancellationToken);
       if (retrieveResponse == null || retrieveResponse.Entity == null || !retrieveResponse.Entity.Attributes.Contains(logicalName))
         return;
       entity.Attributes[logicalName] = retrieveResponse.Entity.Attributes[logicalName];
@@ -687,7 +690,8 @@ label_4:
     /// <summary>Executes a message in the form of a request, and returns a response.</summary>
     /// <returns>Type:  <see cref="T:Microsoft.Xrm.Sdk.OrganizationResponse"></see>. The response returned from processing the organization request.</returns>
     /// <param name="request">Type: <see cref="T:Microsoft.Xrm.Sdk.OrganizationResponse"></see>. The request to be sent.</param>
-    public async Task<OrganizationResponse> Execute(OrganizationRequest request)
+    /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param>
+    public async Task<OrganizationResponse> ExecuteAsync(OrganizationRequest request, CancellationToken cancellationToken)
     {
       if (request == null)
         throw new ArgumentNullException(nameof (request));
@@ -695,7 +699,7 @@ label_4:
       OrganizationResponse response;
       try
       {
-        response = await this._service.Execute(request);
+        response = await this._service.ExecuteAsync(request, cancellationToken);
       }
       catch (Exception ex)
       {
@@ -721,24 +725,26 @@ label_4:
 
     /// <summary>Saves the changes that the <see cref="T:Microsoft.Xrm.Sdk.Client.OrganizationServiceContext"></see> is tracking to pn_microsoftcrm.</summary>
     /// <returns>Type:  <see cref="T:Microsoft.Xrm.Sdk.SaveChangesResultCollection"></see>A <see cref="T:Microsoft.Xrm.Sdk.SaveChangesResultCollection"></see> that contains status, headers, and errors that result from the call to <see cref="M:Microsoft.Xrm.Sdk.Client.OrganizationServiceContext.SaveChanges"></see>.</returns>
+    /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param> 
     [SuppressMessage("Microsoft.Design", "CA1002:DoNotExposeGenericLists", Justification = "Choosing performance over flexibility. Also changing result collection does not need to be tracked.")]
-    public Task<SaveChangesResultCollection> SaveChanges()
+    public Task<SaveChangesResultCollection> SaveChangesAsync(CancellationToken cancellationToken)
     {
-      return this.SaveChanges(this.SaveChangesDefaultOptions);
+      return this.SaveChangesAsync(this.SaveChangesDefaultOptions, cancellationToken);
     }
 
     /// <summary>Saves the changes that the <see cref="T:Microsoft.Xrm.Sdk.Client.OrganizationServiceContext"></see> is tracking to pn_microsoftcrm.</summary>
     /// <returns>Type:  <see cref="T:Microsoft.Xrm.Sdk.SaveChangesResultCollection"></see>A <see cref="T:Microsoft.Xrm.Sdk.SaveChangesResultCollection"></see> that contains status, headers, and errors that result from the call to <see cref="M:Microsoft.Xrm.Sdk.Client.OrganizationServiceContext.SaveChanges"></see>.</returns>
     /// <param name="options">Type:  <see cref="T:Microsoft.Xrm.Sdk.Client.SaveChangesOptions"></see>. Indicates how changes are saved.</param>
+    /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param>
     [SuppressMessage("Microsoft.Design", "CA1002:DoNotExposeGenericLists", Justification = "Choosing performance over flexibility. Also changing result collection does not need to be tracked.")]
-    public async Task<SaveChangesResultCollection> SaveChanges(
-      SaveChangesOptions options)
+    public async Task<SaveChangesResultCollection> SaveChangesAsync(
+      SaveChangesOptions options, CancellationToken cancellationToken)
     {
       this.OnSavingChanges(options);
       SaveChangesResultCollection results = new SaveChangesResultCollection(options);
       foreach (Tuple<DisassociateRequest, IEnumerable<LinkDescriptor>> tuple in this.GetDisassociateRequests().ToList<Tuple<DisassociateRequest, IEnumerable<LinkDescriptor>>>())
       {
-        SaveChangesResult result = await this.SaveChange((OrganizationRequest) tuple.Item1, (IList<SaveChangesResult>) results);
+        SaveChangesResult result = await this.SaveChangeAsync((OrganizationRequest) tuple.Item1, (IList<SaveChangesResult>) results, cancellationToken);
         if (!OrganizationServiceContext.CanContinue(options, result))
         {
           this.OnSaveChanges(results);
@@ -750,10 +756,10 @@ label_4:
       foreach (EntityDescriptor existingEntity in this.GetDeletedEntities().ToList<EntityDescriptor>())
       {
         EntityReference entityReference = existingEntity.Entity.ToEntityReference();
-        SaveChangesResult result = await this.SaveChange((OrganizationRequest) new DeleteRequest()
+        SaveChangesResult result = await this.SaveChangeAsync((OrganizationRequest) new DeleteRequest()
         {
           Target = entityReference
-        }, (IList<SaveChangesResult>) results);
+        }, (IList<SaveChangesResult>) results, cancellationToken);
         if (!OrganizationServiceContext.CanContinue(options, result))
         {
           this.OnSaveChanges(results);
@@ -765,7 +771,7 @@ label_4:
       }
       foreach (Entity entity in OrganizationServiceContext.FilterRoots((ICollection<Entity>) new HashSet<Entity>((IEnumerable<Entity>) this._roots)).ToList<Entity>())
       {
-        foreach (SaveChangesResult changeRequest in this.GetChangeRequests(results, entity))
+        foreach (SaveChangesResult changeRequest in this.GetChangeRequests(results, entity, cancellationToken))
         {
           if (!OrganizationServiceContext.CanContinue(options, changeRequest))
           {
@@ -814,14 +820,15 @@ label_4:
     }
 
     [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Need to show proper error message instead of throwing exception.")]
-    private async Task<SaveChangesResult> SaveChange(
+    private async Task<SaveChangesResult> SaveChangeAsync(
       OrganizationRequest request,
-      IList<SaveChangesResult> results)
+      IList<SaveChangesResult> results,
+      CancellationToken cancellationToken)
     {
       SaveChangesResult saveChangesResult;
       try
       {
-        OrganizationResponse response = await this.Execute(request);
+        OrganizationResponse response = await this.ExecuteAsync(request, cancellationToken);
         saveChangesResult = new SaveChangesResult(request, response);
       }
       catch (Exception ex)
@@ -864,7 +871,8 @@ label_4:
     [SuppressMessage("Microsoft.Usage", "CA9888:DisposeObjectsCorrectly", Justification = "Value is returned from method and cannot be disposed.")]
     private IEnumerable<SaveChangesResult> GetChangeRequests(
       SaveChangesResultCollection results,
-      Entity entity)
+      Entity entity,
+      CancellationToken cancellationToken)
     {
       List<Entity> path = new List<Entity>()
       {
@@ -872,12 +880,12 @@ label_4:
       };
       List<LinkDescriptor> localCircularLinks = new List<LinkDescriptor>();
       EntityState? entityState = entity.EntityState;
-      IEnumerable<SaveChangesResult> requests = (entityState.GetValueOrDefault() != EntityState.Unchanged ? 0 : (entityState.HasValue ? 1 : 0)) != 0 ? this.GetChangeRequestsFromUnchangedTree(results, entity, (IEnumerable<Entity>) path, (IList<LinkDescriptor>) localCircularLinks) : this.GetChangeRequestsFromChangedTree(results, entity, (IEnumerable<Entity>) path, (IList<LinkDescriptor>) localCircularLinks);
+      IEnumerable<SaveChangesResult> requests = (entityState.GetValueOrDefault() != EntityState.Unchanged ? 0 : (entityState.HasValue ? 1 : 0)) != 0 ? this.GetChangeRequestsFromUnchangedTree(results, entity, (IEnumerable<Entity>) path, (IList<LinkDescriptor>) localCircularLinks, cancellationToken) : this.GetChangeRequestsFromChangedTree(results, entity, (IEnumerable<Entity>) path, (IList<LinkDescriptor>) localCircularLinks, cancellationToken);
       foreach (SaveChangesResult saveChangesResult in requests)
         yield return saveChangesResult;
       if (localCircularLinks.Any<LinkDescriptor>())
       {
-        IEnumerable<SaveChangesResult> associateResults = this.ToAssociateResults((IEnumerable<LinkDescriptor>) localCircularLinks, (IList<SaveChangesResult>) results);
+        IEnumerable<SaveChangesResult> associateResults = this.ToAssociateResults((IEnumerable<LinkDescriptor>) localCircularLinks, (IList<SaveChangesResult>) results, cancellationToken);
         foreach (SaveChangesResult saveChangesResult in associateResults)
           yield return saveChangesResult;
       }
@@ -888,22 +896,23 @@ label_4:
       SaveChangesResultCollection results,
       Entity entity,
       IEnumerable<Entity> path,
-      IList<LinkDescriptor> circularLinks)
+      IList<LinkDescriptor> circularLinks,
+      CancellationToken cancellationToken)
     {
       List<Entity> localPath = new List<Entity>()
       {
         entity
       };
       List<LinkDescriptor> localCircularLinks = new List<LinkDescriptor>();
-      IEnumerable<SaveChangesResult> requests = this.GetChangeRequestsFromSubtree(results, entity, (IEnumerable<Entity>) localPath, (IList<LinkDescriptor>) localCircularLinks, path, circularLinks);
+      IEnumerable<SaveChangesResult> requests = this.GetChangeRequestsFromSubtree(results, entity, (IEnumerable<Entity>) localPath, (IList<LinkDescriptor>) localCircularLinks, path, circularLinks, cancellationToken);
       foreach (SaveChangesResult saveChangesResult in requests)
         yield return saveChangesResult;
-      SaveChangesResult createOrUpdateResult = this.GetSaveChangesResult(results, entity).GetAwaiter().GetResult();
+      SaveChangesResult createOrUpdateResult = this.GetSaveChangesResult(results, entity, cancellationToken).GetAwaiter().GetResult();
       yield return createOrUpdateResult;
       this.DetachOnSave(entity);
       if (localCircularLinks.Any<LinkDescriptor>())
       {
-        IEnumerable<SaveChangesResult> associateResults = this.ToAssociateResults((IEnumerable<LinkDescriptor>) localCircularLinks, (IList<SaveChangesResult>) results);
+        IEnumerable<SaveChangesResult> associateResults = this.ToAssociateResults((IEnumerable<LinkDescriptor>) localCircularLinks, (IList<SaveChangesResult>) results, cancellationToken);
         foreach (SaveChangesResult saveChangesResult in associateResults)
           yield return saveChangesResult;
       }
@@ -914,7 +923,8 @@ label_4:
       SaveChangesResultCollection results,
       Entity entity,
       IEnumerable<Entity> path,
-      IList<LinkDescriptor> circularLinks)
+      IList<LinkDescriptor> circularLinks,
+      CancellationToken cancellationToken)
     {
       List<LinkDescriptor> relatedLinks = new List<LinkDescriptor>();
       var relatedEntityGroups = entity.RelatedEntities.SelectMany((Func<KeyValuePair<Relationship, EntityCollection>, IEnumerable<Entity>>) (relationship => (IEnumerable<Entity>) relationship.Value.Entities), (relationship, target) => new
@@ -948,7 +958,7 @@ label_4:
             target
           });
           EntityState? entityState = target.EntityState;
-          IEnumerable<SaveChangesResult> requests = (entityState.GetValueOrDefault() != EntityState.Unchanged ? 0 : (entityState.HasValue ? 1 : 0)) != 0 ? this.GetChangeRequestsFromUnchangedTree(results, target, targetPath, circularLinks) : this.GetChangeRequestsFromChangedTree(results, target, targetPath, circularLinks);
+          IEnumerable<SaveChangesResult> requests = (entityState.GetValueOrDefault() != EntityState.Unchanged ? 0 : (entityState.HasValue ? 1 : 0)) != 0 ? this.GetChangeRequestsFromUnchangedTree(results, target, targetPath, circularLinks, cancellationToken) : this.GetChangeRequestsFromChangedTree(results, target, targetPath, circularLinks, cancellationToken);
           foreach (SaveChangesResult saveChangesResult in requests)
             yield return saveChangesResult;
           if (addedLinks.Any<LinkDescriptor>())
@@ -966,7 +976,7 @@ label_4:
       }
       if (relatedLinks.Any<LinkDescriptor>())
       {
-        IEnumerable<SaveChangesResult> associateResults = this.ToAssociateResults((IEnumerable<LinkDescriptor>) relatedLinks, (IList<SaveChangesResult>) results);
+        IEnumerable<SaveChangesResult> associateResults = this.ToAssociateResults((IEnumerable<LinkDescriptor>) relatedLinks, (IList<SaveChangesResult>) results, cancellationToken);
         foreach (SaveChangesResult saveChangesResult in associateResults)
           yield return saveChangesResult;
         using (List<LinkDescriptor>.Enumerator enumerator = relatedLinks.GetEnumerator())
@@ -991,7 +1001,8 @@ label_4:
       IEnumerable<Entity> localPath,
       IList<LinkDescriptor> localCircularLinks,
       IEnumerable<Entity> path,
-      IList<LinkDescriptor> circularLinks)
+      IList<LinkDescriptor> circularLinks,
+      CancellationToken cancellationToken)
     {
       var relatedEntityGroups = entity.RelatedEntities.SelectMany((Func<KeyValuePair<Relationship, EntityCollection>, IEnumerable<Entity>>) (relationship => (IEnumerable<Entity>) relationship.Value.Entities), (relationship, target) => new
       {
@@ -1037,10 +1048,10 @@ label_4:
           if (!addedLinks.Any<LinkDescriptor>())
           {
             EntityState? entityState = target.EntityState;
-            saveChangesResults = (entityState.GetValueOrDefault() != EntityState.Unchanged ? 0 : (entityState.HasValue ? 1 : 0)) != 0 ? this.GetChangeRequestsFromUnchangedTree(results, target, targetPath, circularLinks) : this.GetChangeRequestsFromChangedTree(results, target, targetPath, circularLinks);
+            saveChangesResults = (entityState.GetValueOrDefault() != EntityState.Unchanged ? 0 : (entityState.HasValue ? 1 : 0)) != 0 ? this.GetChangeRequestsFromUnchangedTree(results, target, targetPath, circularLinks, cancellationToken) : this.GetChangeRequestsFromChangedTree(results, target, targetPath, circularLinks, cancellationToken);
           }
           else
-            saveChangesResults = this.GetChangeRequestsFromSubtree(results, target, localTargetPath, localCircularLinks, targetPath, circularLinks);
+            saveChangesResults = this.GetChangeRequestsFromSubtree(results, target, localTargetPath, localCircularLinks, targetPath, circularLinks, cancellationToken);
           IEnumerable<SaveChangesResult> requests = saveChangesResults;
           foreach (SaveChangesResult saveChangesResult in requests)
             yield return saveChangesResult;
@@ -1080,7 +1091,8 @@ label_4:
 
     private async Task<SaveChangesResult> GetSaveChangesResult(
       SaveChangesResultCollection results,
-      Entity entity)
+      Entity entity,
+      CancellationToken cancellationToken)
     {
       OrganizationRequest request = OrganizationServiceContext.GetRequest(entity);
       if (request is CreateRequest createRequest)
@@ -1088,7 +1100,7 @@ label_4:
         {
           createRequest.Target
         }).ToList<Entity>();
-      SaveChangesResult saveChangesResult = await this.SaveChange(request, (IList<SaveChangesResult>) results);
+      SaveChangesResult saveChangesResult = await this.SaveChangeAsync(request, (IList<SaveChangesResult>) results, cancellationToken);
       if (saveChangesResult.Response is CreateResponse response && entity.Id == Guid.Empty)
         entity.Id = response.id;
       return saveChangesResult;
@@ -1153,9 +1165,10 @@ label_4:
 
     private IEnumerable<SaveChangesResult> ToAssociateResults(
       IEnumerable<LinkDescriptor> links,
-      IList<SaveChangesResult> results)
+      IList<SaveChangesResult> results,
+      CancellationToken cancellationToken)
     {
-      return OrganizationServiceContext.ToAssociateRequests(links).Select<AssociateRequest, SaveChangesResult>((Func<AssociateRequest, SaveChangesResult>) (associate => this.SaveChange((OrganizationRequest) associate, results).GetAwaiter().GetResult()));
+      return OrganizationServiceContext.ToAssociateRequests(links).Select<AssociateRequest, SaveChangesResult>((Func<AssociateRequest, SaveChangesResult>) (associate => this.SaveChangeAsync((OrganizationRequest) associate, results, cancellationToken).GetAwaiter().GetResult()));
     }
 
     private static void SetNewId(Entity entity)
@@ -1327,11 +1340,12 @@ label_4:
         throw new ArgumentException(string.Format((IFormatProvider) CultureInfo.InvariantCulture, "The specified type '{0}' is not a known entity type.", (object) entityType));
     }
 
-    private async Task<EntityCollection> GetRelatedEntities(
+    private async Task<EntityCollection> GetRelatedEntitiesAsync(
       Entity entity,
-      Relationship relationship)
+      Relationship relationship,
+      CancellationToken cancellationToken)
     {
-      string relatedEntityName = await this.GetRelatedEntityName(entity, relationship);
+      string relatedEntityName = await this.GetRelatedEntityNameAsync(entity, relationship, cancellationToken);
       RelationshipQueryCollection relationshipQueryCollection1 = new RelationshipQueryCollection();
       relationshipQueryCollection1.Add(relationship, (QueryBase) new QueryExpression(relatedEntityName)
       {
@@ -1339,23 +1353,23 @@ label_4:
       });
       RelationshipQueryCollection relationshipQueryCollection2 = relationshipQueryCollection1;
       EntityReference entityReference = new EntityReference(entity.LogicalName, entity.Id);
-      RelatedEntityCollection relatedEntities = (await this.Execute((OrganizationRequest) new RetrieveRequest()
+      RelatedEntityCollection relatedEntities = (await this.ExecuteAsync((OrganizationRequest) new RetrieveRequest()
       {
         Target = entityReference,
         ColumnSet = new ColumnSet(),
         RelatedEntitiesQuery = relationshipQueryCollection2
-      }) as RetrieveResponse).Entity.RelatedEntities;
+      }, cancellationToken) as RetrieveResponse).Entity.RelatedEntities;
       return !relatedEntities.Contains(relationship) ? (EntityCollection) null : relatedEntities[relationship];
     }
 
-    private async Task<string> GetRelatedEntityName(Entity entity, Relationship relationship)
+    private async Task<string> GetRelatedEntityNameAsync(Entity entity, Relationship relationship, CancellationToken cancellationToken)
     {
       if (relationship.PrimaryEntityRole.HasValue)
         return entity.LogicalName;
-      RetrieveRelationshipResponse relationshipResponse = await this.Execute((OrganizationRequest) new RetrieveRelationshipRequest()
+      RetrieveRelationshipResponse relationshipResponse = await this.ExecuteAsync((OrganizationRequest) new RetrieveRelationshipRequest()
       {
         Name = relationship.SchemaName
-      }) as RetrieveRelationshipResponse;
+      }, cancellationToken) as RetrieveRelationshipResponse;
       if (relationshipResponse.RelationshipMetadata is OneToManyRelationshipMetadata relationshipMetadata1)
         return !(relationshipMetadata1.ReferencingEntity == entity.LogicalName) ? relationshipMetadata1.ReferencingEntity : relationshipMetadata1.ReferencedEntity;
       if (relationshipResponse.RelationshipMetadata is ManyToManyRelationshipMetadata relationshipMetadata2)

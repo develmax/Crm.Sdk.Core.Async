@@ -7,6 +7,7 @@ using System.Security.Permissions;
 using System.ServiceModel;
 using System.ServiceModel.Description;
 using System.ServiceModel.Security;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Xrm.Sdk.Client
@@ -139,15 +140,15 @@ namespace Microsoft.Xrm.Sdk.Client
             return this._xrmSdkAssemblyFileVersion;
         }
 
-        private Task<Guid> CreateCoreWithContext(Entity entity)
+        private Task<Guid> CreateCoreWithContextAsync(Entity entity, CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
-                return this.ServiceChannel.Channel.Create(entity);
+                return this.ServiceChannel.Channel.CreateAsync(entity, cancellationToken);
         }
 
         /// <summary>internal</summary>
         /// <returns>Type: Returns_GuidThe ID of the created entity.</returns>
-        protected internal virtual async Task<Guid> CreateCore(Entity entity)
+        protected internal virtual async Task<Guid> CreateCoreAsync(Entity entity, CancellationToken cancellationToken)
         {
             bool? retry = new bool?();
             do
@@ -155,7 +156,12 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    return await CreateCoreWithContext(entity);
+                    cancellationToken.Register(() =>
+                    {
+                        this.ServiceChannel.Abort();
+                    });
+
+                    return await CreateCoreWithContextAsync(entity, cancellationToken);
                 }
                 catch (MessageSecurityException ex)
                 {
@@ -199,21 +205,23 @@ namespace Microsoft.Xrm.Sdk.Client
             return Guid.Empty;
         }
 
-        private Task<Entity> RetrieveCoreWithContext(
+        private Task<Entity> RetrieveCoreWithContextAsync(
             string entityName,
             Guid id,
-            ColumnSet columnSet)
+            ColumnSet columnSet,
+            CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
-                return this.ServiceChannel.Channel.Retrieve(entityName, id, columnSet);
+                return this.ServiceChannel.Channel.RetrieveAsync(entityName, id, columnSet, cancellationToken);
         }
 
         /// <summary>internal</summary>
         /// <returns>Type:  <see cref="T:Microsoft.Xrm.Sdk.Entity"></see>.</returns>
-        protected internal virtual async Task<Entity> RetrieveCore(
+        protected internal virtual async Task<Entity> RetrieveCoreAsync(
           string entityName,
           Guid id,
-          ColumnSet columnSet)
+          ColumnSet columnSet,
+          CancellationToken cancellationToken)
         {
             bool? retry = new bool?();
             do
@@ -221,7 +229,12 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    return await RetrieveCoreWithContext(entityName, id, columnSet);
+                    cancellationToken.Register(() =>
+                    {
+                        this.ServiceChannel.Abort();
+                    });
+
+                    return await RetrieveCoreWithContextAsync(entityName, id, columnSet, cancellationToken);
                 }
                 catch (MessageSecurityException ex)
                 {
@@ -265,16 +278,16 @@ namespace Microsoft.Xrm.Sdk.Client
             return (Entity)null;
         }
 
-        private Task UpdateCoreWithContext(Entity entity)
+        private Task UpdateCoreWithContextAsync(Entity entity, CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
             {
-                return this.ServiceChannel.Channel.Update(entity);
+                return this.ServiceChannel.Channel.UpdateAsync(entity, cancellationToken);
             }
         }
 
         /// <summary>internal</summary>
-        protected virtual async Task UpdateCore(Entity entity)
+        protected virtual async Task UpdateCoreAsync(Entity entity, CancellationToken cancellationToken)
         {
             bool? retry = new bool?();
             do
@@ -282,7 +295,12 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    await UpdateCoreWithContext(entity);
+                    cancellationToken.Register(() =>
+                    {
+                        this.ServiceChannel.Abort();
+                    });
+
+                    await UpdateCoreWithContextAsync(entity, cancellationToken);
                     break;
                 }
                 catch (MessageSecurityException ex)
@@ -326,16 +344,16 @@ namespace Microsoft.Xrm.Sdk.Client
             while (retry.HasValue && retry.Value);
         }
 
-        private Task DeleteCoreWithContext(string entityName, Guid id)
+        private Task DeleteCoreWithContext(string entityName, Guid id, CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
             {
-                return this.ServiceChannel.Channel.Delete(entityName, id);
+                return this.ServiceChannel.Channel.DeleteAsync(entityName, id, cancellationToken);
             }
         }
 
         /// <summary>internal</summary>
-        protected internal virtual async Task DeleteCore(string entityName, Guid id)
+        protected internal virtual async Task DeleteCoreAsync(string entityName, Guid id, CancellationToken cancellationToken)
         {
             bool? retry = new bool?();
             do
@@ -343,7 +361,12 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    await DeleteCoreWithContext(entityName, id);
+                    cancellationToken.Register(() =>
+                    {
+                        this.ServiceChannel.Abort();
+                    });
+
+                    await DeleteCoreWithContext(entityName, id, cancellationToken);
                     break;
                 }
                 catch (MessageSecurityException ex)
@@ -387,17 +410,17 @@ namespace Microsoft.Xrm.Sdk.Client
             while (retry.HasValue && retry.Value);
         }
 
-        private Task<OrganizationResponse> ExecuteCoreWithContext(
-            OrganizationRequest request)
+        private Task<OrganizationResponse> ExecuteCoreWithContextAsync(
+            OrganizationRequest request, CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
-                return this.ServiceChannel.Channel.Execute(request);
+                return this.ServiceChannel.Channel.ExecuteAsync(request, cancellationToken);
         }
 
         /// <summary>internal</summary>
         /// <returns>Type: <see cref="T:Microsoft.Xrm.Sdk.OrganizationResponse"></see>.</returns>
-        protected internal virtual async Task<OrganizationResponse> ExecuteCore(
-          OrganizationRequest request)
+        protected internal virtual async Task<OrganizationResponse> ExecuteCoreAsync(
+          OrganizationRequest request, CancellationToken cancellationToken)
         {
             bool? retry = new bool?();
             do
@@ -405,7 +428,12 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    return await ExecuteCoreWithContext(request);
+                    cancellationToken.Register(() =>
+                    {
+                        this.ServiceChannel.Abort();
+                    });
+
+                    return await ExecuteCoreWithContextAsync(request, cancellationToken);
                 }
                 catch (MessageSecurityException ex)
                 {
@@ -449,24 +477,26 @@ namespace Microsoft.Xrm.Sdk.Client
             return (OrganizationResponse)null;
         }
 
-        private Task AssociateCoreWithContext(
+        private Task AssociateCoreWithContextAsync(
             string entityName,
             Guid entityId,
             Relationship relationship,
-            EntityReferenceCollection relatedEntities)
+            EntityReferenceCollection relatedEntities,
+            CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
             {
-                return this.ServiceChannel.Channel.Associate(entityName, entityId, relationship, relatedEntities);
+                return this.ServiceChannel.Channel.AssociateAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
             }
         }
 
         /// <summary>internal</summary>
-        protected internal virtual async Task AssociateCore(
+        protected internal virtual async Task AssociateCoreAsync(
           string entityName,
           Guid entityId,
           Relationship relationship,
-          EntityReferenceCollection relatedEntities)
+          EntityReferenceCollection relatedEntities,
+          CancellationToken cancellationToken)
         {
             bool? retry = new bool?();
             do
@@ -474,7 +504,12 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    await AssociateCoreWithContext(entityName, entityId, relationship, relatedEntities);
+                    cancellationToken.Register(() =>
+                    {
+                        this.ServiceChannel.Abort();
+                    });
+
+                    await AssociateCoreWithContextAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
                     break;
                 }
                 catch (MessageSecurityException ex)
@@ -518,24 +553,26 @@ namespace Microsoft.Xrm.Sdk.Client
             while (retry.HasValue && retry.Value);
         }
 
-        private Task DisassociateCoreWithContext(
+        private Task DisassociateCoreWithContextAsync(
             string entityName,
             Guid entityId,
             Relationship relationship,
-            EntityReferenceCollection relatedEntities)
+            EntityReferenceCollection relatedEntities,
+            CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
             {
-                return this.ServiceChannel.Channel.Disassociate(entityName, entityId, relationship, relatedEntities);
+                return this.ServiceChannel.Channel.DisassociateAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
             }
         }
 
         /// <summary>internal</summary>
-        protected internal virtual async Task DisassociateCore(
+        protected internal virtual async Task DisassociateCoreAsync(
           string entityName,
           Guid entityId,
           Relationship relationship,
-          EntityReferenceCollection relatedEntities)
+          EntityReferenceCollection relatedEntities,
+          CancellationToken cancellationToken)
         {
             bool? retry = new bool?();
             do
@@ -543,7 +580,12 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    await DisassociateCoreWithContext(entityName, entityId, relationship, relatedEntities);
+                    cancellationToken.Register(() =>
+                    {
+                        this.ServiceChannel.Abort();
+                    });
+
+                    await DisassociateCoreWithContextAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
                     break;
                 }
                 catch (MessageSecurityException ex)
@@ -587,17 +629,17 @@ namespace Microsoft.Xrm.Sdk.Client
             while (retry.HasValue && retry.Value);
         }
 
-        private Task<EntityCollection> RetrieveMultipleCoreWithContext(QueryBase query)
+        private Task<EntityCollection> RetrieveMultipleCoreWithContextAsync(QueryBase query, CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
             {
-                return this.ServiceChannel.Channel.RetrieveMultiple(query);
+                return this.ServiceChannel.Channel.RetrieveMultipleAsync(query, cancellationToken);
             }
         }
 
         /// <summary>internal</summary>
         /// <returns>Type:  <see cref="T:Microsoft.Xrm.Sdk.EntityCollection"></see>.</returns>
-        protected internal async virtual Task<EntityCollection> RetrieveMultipleCore(QueryBase query)
+        protected internal async virtual Task<EntityCollection> RetrieveMultipleCoreAsync(QueryBase query, CancellationToken cancellationToken)
         {
             bool? retry = new bool?();
             do
@@ -605,7 +647,12 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    return await RetrieveMultipleCoreWithContext(query);
+                    cancellationToken.Register(() =>
+                    {
+                        this.ServiceChannel.Abort();
+                    });
+
+                    return await RetrieveMultipleCoreWithContextAsync(query, cancellationToken);
                 }
                 catch (MessageSecurityException ex)
                 {
@@ -652,9 +699,10 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <summary>Creates a record.</summary>
         /// <returns>Type: Returns_GuidThe ID of the created entity.</returns>
         /// <param name="entity">Type: <see cref="T:Microsoft.Xrm.Sdk.Entity"></see>. An entity instance that contains the properties to set in the newly created record.</param>
-        public Task<Guid> Create(Entity entity)
+        /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param>
+        public Task<Guid> CreateAsync(Entity entity, CancellationToken cancellationToken)
         {
-            return this.CreateCore(entity);
+            return this.CreateCoreAsync(entity, cancellationToken);
         }
 
         /// <summary>Retrieves a record.</summary>
@@ -662,32 +710,36 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="id">Type: Returns_Guid. The ID of the record you want to retrieve.</param>
         /// <param name="columnSet">Type: <see cref="T:Microsoft.Xrm.Sdk.Query.ColumnSet"></see>. A query that specifies the set of columns, or attributes, to retrieve.</param>
         /// <param name="entityName">Type: Returns_String. The logical name of the entity specified in the entityId parameter.</param>
-        public Task<Entity> Retrieve(string entityName, Guid id, ColumnSet columnSet)
+        /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param>
+        public Task<Entity> RetrieveAsync(string entityName, Guid id, ColumnSet columnSet, CancellationToken cancellationToken)
         {
-            return this.RetrieveCore(entityName, id, columnSet);
+            return this.RetrieveCoreAsync(entityName, id, columnSet, cancellationToken);
         }
 
         /// <summary>Updates an existing record.</summary>
         /// <param name="entity">Type: <see cref="T:Microsoft.Xrm.Sdk.Entity"></see>. An entity instance that has one or more properties set to be updated in the record.</param>
-        public Task Update(Entity entity)
+        /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param>
+        public Task UpdateAsync(Entity entity, CancellationToken cancellationToken)
         {
-            return this.UpdateCore(entity);
+            return this.UpdateCoreAsync(entity, cancellationToken);
         }
 
         /// <summary>Deletes a record.</summary>
         /// <param name="id">Type: Returns_Guid. The ID of the record of the record to delete.</param>
         /// <param name="entityName">Type: Returns_String. The logical name of the entity specified in the entityId parameter.</param>
-        public Task Delete(string entityName, Guid id)
+        /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param>
+        public Task DeleteAsync(string entityName, Guid id, CancellationToken cancellationToken)
         {
-            return this.DeleteCore(entityName, id);
+            return this.DeleteCoreAsync(entityName, id, cancellationToken);
         }
 
         /// <summary>Executes a message in the form of a request, and returns a response.</summary>
         /// <returns>Type: <see cref="T:Microsoft.Xrm.Sdk.OrganizationResponse"></see>. You must cast the return value of this method to the specific instance of the response that corresponds to the Request parameter.</returns>
         /// <param name="request">Type: <see cref="T:Microsoft.Xrm.Sdk.OrganizationRequest"></see>. An instance of a request class that defines the action to be performed.</param>
-        public Task<OrganizationResponse> Execute(OrganizationRequest request)
+        /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param>
+        public Task<OrganizationResponse> ExecuteAsync(OrganizationRequest request, CancellationToken cancellationToken)
         {
-            return this.ExecuteCore(request);
+            return this.ExecuteCoreAsync(request, cancellationToken);
         }
 
         /// <summary>Creates a link between records.</summary>
@@ -695,13 +747,15 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="relationship">Type: <see cref="T:Microsoft.Xrm.Sdk.Relationship"></see>. The name of the relationship to be used to create the link.</param>
         /// <param name="entityName">Type: Returns_String. The logical name of the entity specified in the entityId parameter.</param>
         /// <param name="entityId">Type: Returns_Guid. The ID of the record to which the related records will be associated.</param>
-        public Task Associate(
+        /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param>
+        public Task AssociateAsync(
           string entityName,
           Guid entityId,
           Relationship relationship,
-          EntityReferenceCollection relatedEntities)
+          EntityReferenceCollection relatedEntities,
+          CancellationToken cancellationToken)
         {
-            return this.AssociateCore(entityName, entityId, relationship, relatedEntities);
+            return this.AssociateCoreAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
         }
 
         /// <summary>Deletes a link between records. </summary>
@@ -709,21 +763,24 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="relationship">Type: <see cref="T:Microsoft.Xrm.Sdk.Relationship"></see>. The name of the relationship to be used to remove the link.</param>
         /// <param name="entityName">Type: Returns_String. The logical name of the entity specified in the entityId parameter.</param>
         /// <param name="entityId">Type: Returns_Guid. The ID of the record from which the related records will be disassociated.</param>
-        public Task Disassociate(
+        /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param>
+        public Task DisassociateAsync(
           string entityName,
           Guid entityId,
           Relationship relationship,
-          EntityReferenceCollection relatedEntities)
+          EntityReferenceCollection relatedEntities,
+          CancellationToken cancellationToken)
         {
-            return this.DisassociateCore(entityName, entityId, relationship, relatedEntities);
+            return this.DisassociateCoreAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
         }
 
         /// <summary>Retrieves a collection of records.</summary>
         /// <returns>Type:  <see cref="T:Microsoft.Xrm.Sdk.EntityCollection"></see>.A collection of entity records.</returns>
         /// <param name="query">Type: <see cref="T:Microsoft.Xrm.Sdk.Query.QueryBase"></see>. A query that determines the set of records to retrieve.</param>
-        public Task<EntityCollection> RetrieveMultiple(QueryBase query)
+        /// <param name="cancellationToken">Type: <see cref="T:System.Threading.CancellationToken"></see>. A token propagates notification that operations should be canceled.</param>
+        public Task<EntityCollection> RetrieveMultipleAsync(QueryBase query, CancellationToken cancellationToken)
         {
-            return this.RetrieveMultipleCore(query);
+            return this.RetrieveMultipleCoreAsync(query, cancellationToken);
         }
     }
 }
