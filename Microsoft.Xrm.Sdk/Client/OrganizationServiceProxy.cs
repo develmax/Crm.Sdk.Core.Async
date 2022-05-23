@@ -140,10 +140,10 @@ namespace Microsoft.Xrm.Sdk.Client
             return this._xrmSdkAssemblyFileVersion;
         }
 
-        private Task<Guid> CreateCoreWithContextAsync(Entity entity, CancellationToken cancellationToken)
+        private async Task<Guid> CreateCoreWithContextAsync(Entity entity, CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
-                return this.ServiceChannel.Channel.CreateAsync(entity, cancellationToken);
+                return await this.ServiceChannel.Channel.CreateAsync(entity, cancellationToken);
         }
 
         /// <summary>internal</summary>
@@ -205,14 +205,14 @@ namespace Microsoft.Xrm.Sdk.Client
             return Guid.Empty;
         }
 
-        private Task<Entity> RetrieveCoreWithContextAsync(
+        private async Task<Entity> RetrieveCoreWithContextAsync(
             string entityName,
             Guid id,
             ColumnSet columnSet,
             CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
-                return this.ServiceChannel.Channel.RetrieveAsync(entityName, id, columnSet, cancellationToken);
+                return await this.ServiceChannel.Channel.RetrieveAsync(entityName, id, columnSet, cancellationToken);
         }
 
         /// <summary>internal</summary>
@@ -278,11 +278,11 @@ namespace Microsoft.Xrm.Sdk.Client
             return (Entity)null;
         }
 
-        private Task UpdateCoreWithContextAsync(Entity entity, CancellationToken cancellationToken)
+        private async Task UpdateCoreWithContextAsync(Entity entity, CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
             {
-                return this.ServiceChannel.Channel.UpdateAsync(entity, cancellationToken);
+                await this.ServiceChannel.Channel.UpdateAsync(entity, cancellationToken);
             }
         }
 
@@ -344,11 +344,11 @@ namespace Microsoft.Xrm.Sdk.Client
             while (retry.HasValue && retry.Value);
         }
 
-        private Task DeleteCoreWithContext(string entityName, Guid id, CancellationToken cancellationToken)
+        private async Task DeleteCoreWithContext(string entityName, Guid id, CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
             {
-                return this.ServiceChannel.Channel.DeleteAsync(entityName, id, cancellationToken);
+                await this.ServiceChannel.Channel.DeleteAsync(entityName, id, cancellationToken);
             }
         }
 
@@ -410,11 +410,11 @@ namespace Microsoft.Xrm.Sdk.Client
             while (retry.HasValue && retry.Value);
         }
 
-        private Task<OrganizationResponse> ExecuteCoreWithContextAsync(
+        private async Task<OrganizationResponse> ExecuteCoreWithContextAsync(
             OrganizationRequest request, CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
-                return this.ServiceChannel.Channel.ExecuteAsync(request, cancellationToken);
+                return await this.ServiceChannel.Channel.ExecuteAsync(request, cancellationToken);
         }
 
         /// <summary>internal</summary>
@@ -477,7 +477,7 @@ namespace Microsoft.Xrm.Sdk.Client
             return (OrganizationResponse)null;
         }
 
-        private Task AssociateCoreWithContextAsync(
+        private async Task AssociateCoreWithContextAsync(
             string entityName,
             Guid entityId,
             Relationship relationship,
@@ -486,7 +486,7 @@ namespace Microsoft.Xrm.Sdk.Client
         {
             using (new OrganizationServiceContextInitializer(this))
             {
-                return this.ServiceChannel.Channel.AssociateAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
+                await this.ServiceChannel.Channel.AssociateAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
             }
         }
 
@@ -553,7 +553,7 @@ namespace Microsoft.Xrm.Sdk.Client
             while (retry.HasValue && retry.Value);
         }
 
-        private Task DisassociateCoreWithContextAsync(
+        private async Task DisassociateCoreWithContextAsync(
             string entityName,
             Guid entityId,
             Relationship relationship,
@@ -562,7 +562,7 @@ namespace Microsoft.Xrm.Sdk.Client
         {
             using (new OrganizationServiceContextInitializer(this))
             {
-                return this.ServiceChannel.Channel.DisassociateAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
+                await this.ServiceChannel.Channel.DisassociateAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
             }
         }
 
@@ -629,11 +629,11 @@ namespace Microsoft.Xrm.Sdk.Client
             while (retry.HasValue && retry.Value);
         }
 
-        private Task<EntityCollection> RetrieveMultipleCoreWithContextAsync(QueryBase query, CancellationToken cancellationToken)
+        private async Task<EntityCollection> RetrieveMultipleCoreWithContextAsync(QueryBase query, CancellationToken cancellationToken)
         {
             using (new OrganizationServiceContextInitializer(this))
             {
-                return this.ServiceChannel.Channel.RetrieveMultipleAsync(query, cancellationToken);
+                return await this.ServiceChannel.Channel.RetrieveMultipleAsync(query, cancellationToken);
             }
         }
 

@@ -276,8 +276,8 @@ namespace Microsoft.Xrm.Sdk.Client
                 if (this.ClientCredentials == null)
                     return;
                // SecurityTokenResponse securityTokenResponse = (SecurityTokenResponse)null;
-                switch (this.ServiceConfiguration.AuthenticationType)
-                {
+                /*switch (this.ServiceConfiguration.AuthenticationType)
+                {*/
                     /*case AuthenticationProviderType.Federation:
                         //securityTokenResponse = this.AuthenticateClaims();
                         break;
@@ -299,7 +299,7 @@ namespace Microsoft.Xrm.Sdk.Client
                         }
                         //securityTokenResponse = this.AuthenticateOnlineFederation();
                         break;*/
-                }
+                //}
                 /*ClientExceptionHelper.Assert(securityTokenResponse != null && securityTokenResponse.Token != null, "The user authentication failed!");
                 this.SecurityTokenResponse = securityTokenResponse;*/
                 this.IsAuthenticated = true;

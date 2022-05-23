@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
+using System.ServiceModel;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,6 +13,8 @@ namespace Crm.Sdk.Core.Test
         {
             try
             {
+                //WebRequest.DefaultWebProxy.Credentials = CredentialCache.DefaultCredentials; //System.Net.CredentialCache.DefaultNetworkCredentials
+
                 var _crmUrl = "https://crm.test.ru/";
                 var _organizationName = "Org";
                 var config = Microsoft.Xrm.Sdk.Client.ServiceConfigurationFactory
@@ -23,7 +26,15 @@ namespace Crm.Sdk.Core.Test
                 clientCredentials.Windows.ClientCredential.UserName = "crmuser03012";
                 clientCredentials.Windows.ClientCredential.Password = "123QWEasd";
 
+                foreach (var endpoint in config.ServiceEndpoints)
+                {
+                    if (endpoint.Value.Binding is BasicHttpBinding binding)
+                    {
+                        binding.UseDefaultWebProxy = false;
+                    }
+                }
                 var client = new Microsoft.Xrm.Sdk.Client.OrganizationServiceProxy(config, clientCredentials);
+                
                 //client.CallerId = new Guid("5c073647-da06-e611-80f9-005056971789");
 
                 var q = new Microsoft.Xrm.Sdk.Query.QueryExpression("role")

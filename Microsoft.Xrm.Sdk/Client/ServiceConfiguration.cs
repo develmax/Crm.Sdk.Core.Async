@@ -468,7 +468,7 @@ namespace Microsoft.Xrm.Sdk.Client
             //binding.Security.Mode = System.ServiceModel.BasicHttpSecurityMode.TransportCredentialOnly;
             binding.Security.Transport.ClientCredentialType = System.ServiceModel.HttpClientCredentialType.Ntlm;
             binding.Security.Mode = System.ServiceModel.BasicHttpSecurityMode.Transport;
-
+            
             string endPointAddress = serviceUri.AbsoluteUri + "/web";
 
             var endPoint = new System.ServiceModel.EndpointAddress(endPointAddress);
