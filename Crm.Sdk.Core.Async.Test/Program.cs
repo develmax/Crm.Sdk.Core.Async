@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Crm.Sdk.Core.Test
@@ -78,7 +79,7 @@ namespace Crm.Sdk.Core.Test
 
                 var r = client.Execute(n);*/
 
-                var result = await client.RetrieveMultiple(q);
+                var result = await client.RetrieveMultipleAsync(q, CancellationToken.None);
                 //return result.Entities.Select(i => i.GetAttributeValue<string>("name"));
                 foreach (var role in result.Entities)
                 {
