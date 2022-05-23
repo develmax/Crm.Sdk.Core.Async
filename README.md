@@ -15,7 +15,7 @@ Crm.Sdk.Core.Async is available from NuGet
 ```shell
 dotnet package install Crm.Sdk.Core --version 2.0.8
 ```
-or
+or (for .net core 3.1)
 ```shell
 dotnet package install Crm.Sdk.Core --version 3.0.10
 ```
