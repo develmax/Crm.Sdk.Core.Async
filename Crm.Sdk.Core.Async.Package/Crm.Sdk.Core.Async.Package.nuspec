@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>Crm.Sdk.Core</id>
-    <version>3.0.10</version>
+    <version>6.0.10</version>
     <authors>Maksim Moiseev</authors>
     <!--<license type="expression">MIT</license>-->
     <!--<licenseUrl>https://github.com/develmax/Crm.Sdk.Core.Async/blob/master/LICENSE.md</licenseUrl>-->
@@ -18,16 +18,16 @@
     <repository type="git" url="https://github.com/develmax/Crm.Sdk.Core.Async.git" />
     <projectUrl>https://github.com/develmax/Crm.Sdk.Core.Async</projectUrl>
     <dependencies>
-      <group targetFramework=".NETCoreApp3.1">
-        <dependency id="System.ServiceModel.Http" version="4.9.0" exclude="Build,Analyzers" />
+      <group targetFramework="net6.0">
+        <dependency id="System.ServiceModel.Http" version="4.10.0" exclude="Build,Analyzers" />
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="bin\Release\netcoreapp3.1\Microsoft.Xrm.Sdk.dll" target="lib\netcoreapp3.1\Microsoft.Xrm.Sdk.dll" />
-    <file src="bin\Release\netcoreapp3.1\Microsoft.Crm.Sdk.dll" target="lib\netcoreapp3.1\Microsoft.Crm.Sdk.dll" />
-    <file src="bin\Release\netcoreapp3.1\Microsoft.Crm.Core.dll" target="lib\netcoreapp3.1\Microsoft.Crm.Core.dll" />
-    <file src="bin\Release\netcoreapp3.1\Microsoft.Crm.Sdk.Proxy.dll" target="lib\netcoreapp3.1\Microsoft.Crm.Sdk.Proxy.dll" />
+    <file src="bin\Release\net6.0\Microsoft.Xrm.Sdk.dll" target="lib\net6.0\Microsoft.Xrm.Sdk.dll" />
+    <file src="bin\Release\net6.0\Microsoft.Crm.Sdk.dll" target="lib\net6.0\Microsoft.Crm.Sdk.dll" />
+    <file src="bin\Release\net6.0\Microsoft.Crm.Core.dll" target="lib\net6.0\Microsoft.Crm.Core.dll" />
+    <file src="bin\Release\net6.0\Microsoft.Crm.Sdk.Proxy.dll" target="lib\net6.0\Microsoft.Crm.Sdk.Proxy.dll" />
     <file src="icon.png" target="images\" />
     <file src="license.txt" target="licenses\" />
   </files>
