@@ -470,7 +470,7 @@ namespace Microsoft.Xrm.Sdk.Client
 
             System.ServiceModel.BasicHttpBinding binding = new System.ServiceModel.BasicHttpBinding();
             //binding.Security.Mode = System.ServiceModel.BasicHttpSecurityMode.TransportCredentialOnly;
-            binding.Security.Transport.ClientCredentialType = System.ServiceModel.HttpClientCredentialType.Ntlm;
+            //binding.Security.Transport.ClientCredentialType = System.ServiceModel.HttpClientCredentialType.Ntlm;
             binding.Security.Mode = System.ServiceModel.BasicHttpSecurityMode.Transport;
             
             string endpointAddressUrl = serviceUri.AbsoluteUri + "/web";
@@ -492,8 +492,6 @@ namespace Microsoft.Xrm.Sdk.Client
                                             endpoint
                                         }
                                     };
-                //this.ServiceEndpointMetadata.ServiceEndpoints;
-
             if (this.CurrentServiceEndpoint == null)
                 return;
             //this.CrossRealmIssuerEndpoints = new CrossRealmIssuerEndpointCollection();
@@ -1021,8 +1019,6 @@ namespace Microsoft.Xrm.Sdk.Client
 
             foreach (IEndpointBehavior behavior in channelFactory.Endpoint.EndpointBehaviors)
             {
-                //channelFactory.Endpoint.EndpointBehaviors.Add(behavior);
-
                 if (behavior is HttpMessageHandlerBehavior endpointBehavior)
                 {
                     if (clientCredentials.Windows?.ClientCredential != null)
@@ -1067,7 +1063,10 @@ namespace Microsoft.Xrm.Sdk.Client
                 endpoint.Name = this.CurrentServiceEndpoint.Name;
                 ChannelFactory<TService> channelFactory = new ChannelFactory<TService>(endpoint.Binding, endpoint.Address);
                 //ChannelFactory<TService> channelFactory = new ChannelFactory<TService>(this.CurrentServiceEndpoint);
-                channelFactory.Endpoint.EndpointBehaviors.Add(endpoint.EndpointBehaviors[0]);
+                foreach (IEndpointBehavior behavior in endpoint.EndpointBehaviors)
+                {
+                    channelFactory.Endpoint.EndpointBehaviors.Add(behavior);
+                }
                 /*if (this.ClaimsEnabledService || this.AuthenticationType == AuthenticationProviderType.LiveId)
                     channelFactory.ConfigureChannelFactory<TService>();
                 channelFactory.Credentials.IssuedToken.CacheIssuedTokens = true;*/
