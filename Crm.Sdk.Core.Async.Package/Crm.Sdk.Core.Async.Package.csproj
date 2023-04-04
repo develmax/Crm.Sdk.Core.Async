@@ -13,6 +13,7 @@
     <ProjectReference Include="..\Microsoft.Crm.Core\Microsoft.Crm.Core.csproj" />
     <ProjectReference Include="..\Microsoft.Crm.Sdk.Proxy\Microsoft.Crm.Sdk.Proxy.csproj" />
     <ProjectReference Include="..\Microsoft.Crm.Sdk\Microsoft.Crm.Sdk.csproj" />
+    <ProjectReference Include="..\Microsoft.Xrm.Sdk.OData\Microsoft.Xrm.Sdk.OData.csproj" />
     <ProjectReference Include="..\Microsoft.Xrm.Sdk\Microsoft.Xrm.Sdk.csproj" />
   </ItemGroup>
 
