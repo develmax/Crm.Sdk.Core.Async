@@ -9,7 +9,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
     <PackageReference Include="System.ServiceModel.Http" Version="4.10.0" />
+	<PackageReference Include="System.Formats.Asn1" Version="6.0.0" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -19,5 +21,6 @@
     <Authors>Microsoft.Xrm.Sdk</Authors>
     <PackageReleaseNotes></PackageReleaseNotes>
     <RepositoryUrl></RepositoryUrl>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 </Project>

@@ -6,11 +6,14 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 //using System.IdentityModel.Tokens;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Security;
 using System.Security.Permissions;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.ServiceModel.Description;
+using System.ServiceModel.Dispatcher;
 using System.ServiceModel.Security;
 using System.Text;
 //using Microsoft.IdentityModel.Tokens;
@@ -447,6 +450,7 @@ namespace Microsoft.Xrm.Sdk.Client
         internal ServiceConfiguration(Uri serviceUri, bool checkForSecondary)
         {
             this.ServiceUri = serviceUri;
+
             //this.ServiceEndpointMetadata = ServiceMetadataUtility.RetrieveServiceEndpointMetadata(typeof(TService), this.ServiceUri, checkForSecondary);
             /*ClientExceptionHelper.ThrowIfNull((object)this.ServiceEndpointMetadata, nameof(ServiceEndpointMetadata));
             if (this.ServiceEndpointMetadata.ServiceEndpoints.Count == 0)
@@ -469,17 +473,23 @@ namespace Microsoft.Xrm.Sdk.Client
             binding.Security.Transport.ClientCredentialType = System.ServiceModel.HttpClientCredentialType.Ntlm;
             binding.Security.Mode = System.ServiceModel.BasicHttpSecurityMode.Transport;
             
-            string endPointAddress = serviceUri.AbsoluteUri + "/web";
+            string endpointAddressUrl = serviceUri.AbsoluteUri + "/web";
 
-            var endPoint = new System.ServiceModel.EndpointAddress(endPointAddress);
+            var endpointAddress = new System.ServiceModel.EndpointAddress(endpointAddressUrl);
+
+            var endpoint = new ServiceEndpoint(new ContractDescription("IOrganizationService"),
+                binding,
+                endpointAddress);
+
+            var endpointBehavior = new HttpMessageHandlerBehavior();
+
+            endpoint.EndpointBehaviors.Add(endpointBehavior);
 
             this.ServiceEndpoints = new ServiceEndpointDictionary
                                     {
                                         {
                                             "Endpoint0",
-                                            new ServiceEndpoint(new ContractDescription("IOrganizationService"),
-                                                                binding,
-                                                                endPoint)
+                                            endpoint
                                         }
                                     };
                 //this.ServiceEndpointMetadata.ServiceEndpoints;
@@ -508,6 +518,7 @@ namespace Microsoft.Xrm.Sdk.Client
                 return;#1#
             //this.CrossRealmIssuerEndpoints[identityProviderTrustConfiguration.Endpoint.GetServiceRoot()] = endpointDictionary;
         }*/
+
 
         private void SetAuthenticationConfiguration()
         {
@@ -1007,6 +1018,23 @@ namespace Microsoft.Xrm.Sdk.Client
                     };
                 //channelFactory.Credentials.ServiceCertificate.Authentication.CertificateValidationMode = System.ServiceModel.Security.X509CertificateValidationMode.None;
             }
+
+            foreach (IEndpointBehavior behavior in channelFactory.Endpoint.EndpointBehaviors)
+            {
+                //channelFactory.Endpoint.EndpointBehaviors.Add(behavior);
+
+                if (behavior is HttpMessageHandlerBehavior endpointBehavior)
+                {
+                    if (clientCredentials.Windows?.ClientCredential != null)
+                    {
+                        endpointBehavior.SetCredentials(channelFactory.Credentials.Windows.ClientCredential);
+                    }
+                    else if (clientCredentials.UserName != null && !string.IsNullOrEmpty(clientCredentials.UserName.UserName))
+                    {
+                        endpointBehavior.SetCredentials(new NetworkCredential(clientCredentials.UserName.UserName, clientCredentials.UserName.Password));
+                    }
+                }
+            }
         }
 
         /*[SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
@@ -1038,6 +1066,8 @@ namespace Microsoft.Xrm.Sdk.Client
                 endpoint.ListenUriMode = this.CurrentServiceEndpoint.ListenUriMode;*/
                 endpoint.Name = this.CurrentServiceEndpoint.Name;
                 ChannelFactory<TService> channelFactory = new ChannelFactory<TService>(endpoint.Binding, endpoint.Address);
+                //ChannelFactory<TService> channelFactory = new ChannelFactory<TService>(this.CurrentServiceEndpoint);
+                channelFactory.Endpoint.EndpointBehaviors.Add(endpoint.EndpointBehaviors[0]);
                 /*if (this.ClaimsEnabledService || this.AuthenticationType == AuthenticationProviderType.LiveId)
                     channelFactory.ConfigureChannelFactory<TService>();
                 channelFactory.Credentials.IssuedToken.CacheIssuedTokens = true;*/

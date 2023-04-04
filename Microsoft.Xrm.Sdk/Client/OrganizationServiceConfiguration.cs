@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 //using System.IdentityModel.Tokens;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.ServiceModel;
 using System.ServiceModel.Description;

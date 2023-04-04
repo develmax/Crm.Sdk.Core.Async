@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xrm.Sdk.Discovery;
 using System;
+using System.Net.Http;
 using System.Reflection;
 
 namespace Microsoft.Xrm.Sdk.Client

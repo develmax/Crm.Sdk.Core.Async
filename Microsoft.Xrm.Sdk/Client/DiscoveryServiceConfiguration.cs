@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xrm.Sdk.Discovery;
 using System;
+using System.Net.Http;
 //using System.IdentityModel.Tokens;
 using System.ServiceModel;
 using System.ServiceModel.Description;

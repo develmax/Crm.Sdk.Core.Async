@@ -7,7 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.ServiceModel.Http" Version="4.10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Microsoft.Crm.Sdk.Proxy\Microsoft.Crm.Sdk.Proxy.csproj" />
+    <ProjectReference Include="..\Microsoft.Xrm.Sdk.OData\Microsoft.Xrm.Sdk.OData.csproj" />
     <ProjectReference Include="..\Microsoft.Xrm.Sdk\Microsoft.Xrm.Sdk.csproj" />
   </ItemGroup>
 
