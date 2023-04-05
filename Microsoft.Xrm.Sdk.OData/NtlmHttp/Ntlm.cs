@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#undef DEBUG
+
 using System;
 using System.Buffers.Binary;
 using System.Diagnostics;

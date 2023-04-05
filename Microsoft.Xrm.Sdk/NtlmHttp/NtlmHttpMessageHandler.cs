@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 // #define NOT_WORKING
+#undef DEBUG
 
 using System;
 using System.Net;
@@ -145,9 +146,9 @@ namespace Microsoft.Xrm.Sdk.NtlmHttp
                         request.Headers.Add("Accept", "*/*");
                         request.Headers.Authorization = CreateAuthenticationHeaderValue(blob);
 
-#region DEBUG
+#if DEBUG
                              Console.WriteLine(request);
-#endregion
+#endif
 
                         response = await base.SendAsync(request, cancellationToken);
                     }
@@ -185,7 +186,9 @@ namespace Microsoft.Xrm.Sdk.NtlmHttp
                         request = await request.CloneAsync();
                         request.Headers.Authorization = CreateAuthenticationHeaderValue(blob);
 
+#if DEBUG
                         Console.WriteLine(request);
+#endif
                         // response = await base.SendAsync(request, cancellationToken); // TODO we would like to do this
                         response = await client.SendAsync(request, cancellationToken);
                     }
