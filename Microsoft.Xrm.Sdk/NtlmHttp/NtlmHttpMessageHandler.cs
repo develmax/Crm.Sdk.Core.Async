@@ -162,7 +162,7 @@ namespace Microsoft.Xrm.Sdk.NtlmHttp
         private async Task<HttpResponseMessage> SendAuthenticated(HttpRequestMessage request, CancellationToken cancellationToken, bool useNtlm = true)
         {
             // We would rather not create a new HttpClient for this of course
-            using var client = new HttpClient(InnerHandler);
+            using var client = new HttpClient(InnerHandler, false);
 
             request = await request.CloneAsync();
             var ntlm = new Ntlm(NetworkCredential);
