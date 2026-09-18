@@ -27,13 +27,11 @@ namespace Microsoft.Xrm.Sdk.Client
           bool enableProxyTypes,
           Assembly assembly)
         {
-            if (typeof(TService) == typeof(IOrganizationService))
-                throw new NotSupportedException("Use IOrganizationServiceContract for WCF configuration; IOrganizationService is the local cancellation-aware API.");
             if (serviceUri != (Uri)null)
             {
                 if (typeof(TService) == typeof(IDiscoveryService))
                     return new DiscoveryServiceConfiguration(serviceUri) as IServiceConfiguration<TService>;
-                if (typeof(TService) == typeof(IOrganizationServiceContract))
+                if (typeof(TService) == typeof(IOrganizationService))
                     return new OrganizationServiceConfiguration(serviceUri, enableProxyTypes, assembly) as IServiceConfiguration<TService>;
             }
             return (IServiceConfiguration<TService>)null;
@@ -58,13 +56,11 @@ namespace Microsoft.Xrm.Sdk.Client
           bool enableProxyTypes,
           Assembly assembly)
         {
-            if (typeof(TService) == typeof(IOrganizationService))
-                throw new NotSupportedException("Use IOrganizationServiceContract for WCF configuration; IOrganizationService is the local cancellation-aware API.");
             if (serviceUri != (Uri)null)
             {
                 if (typeof(TService) == typeof(IDiscoveryService))
                     return new DiscoveryServiceConfiguration(serviceUri) as IServiceManagement<TService>;
-                if (typeof(TService) == typeof(IOrganizationServiceContract))
+                if (typeof(TService) == typeof(IOrganizationService))
                     return new OrganizationServiceConfiguration(serviceUri, enableProxyTypes, assembly) as IServiceManagement<TService>;
             }
             return (IServiceManagement<TService>)null;

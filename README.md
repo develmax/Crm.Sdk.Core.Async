@@ -9,10 +9,10 @@ Async SDK for Microsoft Dynamics CRM on-premises, including CRM 2015.
 ## Install
 
 ```shell
-dotnet add package Crm.Sdk.Core --version 11.0.0
+dotnet add package Crm.Sdk.Core --version 11.0.1
 ```
 
-The 11.0.0 release is prepared in this repository; the package owner publishes it
+The 11.0.1 release is prepared in this repository; the package owner publishes it
 to NuGet separately. Until then, use the generated nupkg from a local feed.
 ADFS, Live ID and Dynamics 365 Online authentication are not implemented.
 
@@ -83,21 +83,22 @@ CRM's standard duplicate detection can be requested with CreateRequest and
 SuppressDuplicateDetection=false. It requires enabled, published server rules
 and is not an atomic uniqueness guarantee for concurrent creates.
 
-## Version 11 migration
+## Version 11 compatibility
 
-Version 11 separates the local API (`IOrganizationService`, with cancellation)
-from the CRM wire contract (`IOrganizationServiceContract`, without cancellation).
-Calls on `OrganizationServiceProxy` keep their CancellationToken overloads.
-If you construct a configuration explicitly, migrate it to:
+Version 11.0.1 restores the established public configuration and proxy API.
+Use `IOrganizationService` as before:
 
 ```csharp
 var configuration = ServiceConfigurationFactory
-    .CreateConfiguration<IOrganizationServiceContract>(organizationServiceUri);
+    .CreateConfiguration<IOrganizationService>(organizationServiceUri);
 using var service = new OrganizationServiceProxy(configuration, credentials);
 ```
 
-This is a source/binary breaking change for callers of the generic configuration
-and channel APIs, hence the major version. Rebuild consumers against version 11.
+CancellationToken remains a local method argument. The SDK excludes it from the
+WCF message description internally, so it is never serialized into CRM's SOAP
+body. No separate public wire-contract interface is required. If you adopted the
+temporary `IOrganizationServiceContract` API in 11.0.0, change those references
+back to `IOrganizationService` when upgrading to 11.0.1.
 The Full package includes the WCF SDK, message assemblies and OData client.
 
 ## Build and verify

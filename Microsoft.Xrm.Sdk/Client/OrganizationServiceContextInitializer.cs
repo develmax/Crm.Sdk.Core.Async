@@ -4,10 +4,10 @@ using System.ServiceModel.Channels;
 
 namespace Microsoft.Xrm.Sdk.Client
 {
-    internal sealed class OrganizationServiceContextInitializer : ServiceContextInitializer<IOrganizationServiceContract>
+    internal sealed class OrganizationServiceContextInitializer : ServiceContextInitializer<IOrganizationService>
     {
         public OrganizationServiceContextInitializer(OrganizationServiceProxy proxy)
-          : base((ServiceProxy<IOrganizationServiceContract>)proxy)
+          : base((ServiceProxy<IOrganizationService>)proxy)
         {
             this.Initialize();
         }

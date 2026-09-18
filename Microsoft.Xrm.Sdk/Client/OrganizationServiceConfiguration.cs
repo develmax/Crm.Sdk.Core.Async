@@ -11,11 +11,11 @@ using System.Text;
 
 namespace Microsoft.Xrm.Sdk.Client
 {
-    internal sealed class OrganizationServiceConfiguration : IServiceConfiguration<IOrganizationServiceContract>, /*IWebAuthentication<IOrganizationServiceContract>,*/ IServiceManagement<IOrganizationServiceContract>/*, IEndpointSwitch*/
+    internal sealed class OrganizationServiceConfiguration : IServiceConfiguration<IOrganizationService>, /*IWebAuthentication<IOrganizationService>,*/ IServiceManagement<IOrganizationService>/*, IEndpointSwitch*/
     {
         private object _lockObject = new object();
         //private const string XrmServicesRoot = "xrmservices/";
-        private ServiceConfiguration<IOrganizationServiceContract> service;
+        private ServiceConfiguration<IOrganizationService> service;
 
         private OrganizationServiceConfiguration()
         {
@@ -33,7 +33,7 @@ namespace Microsoft.Xrm.Sdk.Client
         {
             try
             {
-                this.service = new ServiceConfiguration<IOrganizationServiceContract>(serviceUri, true);
+                this.service = new ServiceConfiguration<IOrganizationService>(serviceUri, true);
                 if (enableProxyTypes && assembly != (Assembly)null)
                 {
                     this.EnableProxyTypes(assembly);
@@ -135,18 +135,18 @@ namespace Microsoft.Xrm.Sdk.Client
             }
         }*/
 
-        public ChannelFactory<IOrganizationServiceContract> CreateChannelFactory()
+        public ChannelFactory<IOrganizationService> CreateChannelFactory()
         {
             return this.service.CreateChannelFactory(ClientAuthenticationType.Kerberos);
         }
 
-        public ChannelFactory<IOrganizationServiceContract> CreateChannelFactory(
+        public ChannelFactory<IOrganizationService> CreateChannelFactory(
           ClientAuthenticationType clientAuthenticationType)
         {
             return this.service.CreateChannelFactory(clientAuthenticationType);
         }
 
-        public ChannelFactory<IOrganizationServiceContract> CreateChannelFactory(
+        public ChannelFactory<IOrganizationService> CreateChannelFactory(
           ClientCredentials clientCredentials)
         {
             return this.service.CreateChannelFactory(clientCredentials);
@@ -226,7 +226,7 @@ namespace Microsoft.Xrm.Sdk.Client
             Uri serviceUri1 = OrganizationServiceConfiguration.RemoveOrgName(serviceUri);
             if (serviceUri1 != (Uri)null)
             {
-                this.service = new ServiceConfiguration<IOrganizationServiceContract>(serviceUri1);
+                this.service = new ServiceConfiguration<IOrganizationService>(serviceUri1);
                 if (this.service != null && this.service.ServiceEndpoints != null)
                 {
                     foreach (KeyValuePair<string, ServiceEndpoint> serviceEndpoint in (Dictionary<string, ServiceEndpoint>)this.service.ServiceEndpoints)

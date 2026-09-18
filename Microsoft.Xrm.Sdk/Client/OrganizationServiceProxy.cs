@@ -15,9 +15,9 @@ namespace Microsoft.Xrm.Sdk.Client
 {
     /// <summary>Implements <see cref="T:Microsoft.Xrm.Sdk.IOrganizationService"></see> and provides an authenticated WCF channel to the organization service.</summary>
     [SuppressMessage("Microsoft.Security", "CA9881:ClassesShouldBeSealed", Justification = "This class need to be instantiated by clients and be able to derive from it.")]
-    public class OrganizationServiceProxy : ServiceProxy<IOrganizationServiceContract>, IOrganizationService
+    public class OrganizationServiceProxy : ServiceProxy<IOrganizationService>, IOrganizationService
     {
-        private async Task<T> InvokeChannelAsync<T>(Func<IOrganizationServiceContract, Task<T>> operation, CancellationToken cancellationToken)
+        private async Task<T> InvokeChannelAsync<T>(Func<IOrganizationService, Task<T>> operation, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var channel = ServiceChannel.Channel;
@@ -41,7 +41,7 @@ namespace Microsoft.Xrm.Sdk.Client
             }
         }
 
-        private Task InvokeChannelAsync(Func<IOrganizationServiceContract, Task> operation, CancellationToken cancellationToken)
+        private Task InvokeChannelAsync(Func<IOrganizationService, Task> operation, CancellationToken cancellationToken)
         {
             return InvokeChannelAsync(async channel => { await operation(channel).ConfigureAwait(false); return true; }, cancellationToken);
         }
@@ -89,7 +89,7 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="serviceConfiguration">Type: <see cref="T:Microsoft.Xrm.Sdk.Client.IServiceConfiguration`1"></see>&lt;<see cref="T:Microsoft.Xrm.Sdk.IOrganizationService"></see>&gt;. A service configuration.</param>
         /// <param name="securityTokenResponse">Type: <see cref="T:Microsoft.Xrm.Sdk.Client.SecurityTokenResponse"></see>. A security token response.</param>
         /*public OrganizationServiceProxy(
-          IServiceConfiguration<IOrganizationServiceContract> serviceConfiguration,
+          IServiceConfiguration<IOrganizationService> serviceConfiguration,
           SecurityTokenResponse securityTokenResponse)
           : base(serviceConfiguration, securityTokenResponse)
         {
@@ -99,7 +99,7 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="serviceConfiguration">Type: <see cref="T:Microsoft.Xrm.Sdk.Client.IServiceConfiguration`1"></see>&lt;<see cref="T:Microsoft.Xrm.Sdk.IOrganizationService"></see>&gt;. A service configuration.</param>
         /// <param name="clientCredentials">Type: Returns_ClientCredentials. The logon credentials of the client.</param>
         public OrganizationServiceProxy(
-          IServiceConfiguration<IOrganizationServiceContract> serviceConfiguration,
+          IServiceConfiguration<IOrganizationService> serviceConfiguration,
           ClientCredentials clientCredentials)
           : base(serviceConfiguration, clientCredentials)
         {
@@ -109,9 +109,9 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="serviceManagement">Type: <see cref="T:Microsoft.Xrm.Sdk.Client.IServiceManagement`1"></see>&lt;<see cref="T:Microsoft.Xrm.Sdk.IOrganizationService"></see>&gt;. A service management.</param>
         /// <param name="securityTokenResponse">Type: <see cref="T:Microsoft.Xrm.Sdk.Client.SecurityTokenResponse"></see>. A security token response.</param>
         /*public OrganizationServiceProxy(
-          IServiceManagement<IOrganizationServiceContract> serviceManagement,
+          IServiceManagement<IOrganizationService> serviceManagement,
           SecurityTokenResponse securityTokenResponse)
-          : this(serviceManagement as IServiceConfiguration<IOrganizationServiceContract>, securityTokenResponse)
+          : this(serviceManagement as IServiceConfiguration<IOrganizationService>, securityTokenResponse)
         {
         }*/
 
@@ -119,9 +119,9 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="serviceManagement">Type: <see cref="T:Microsoft.Xrm.Sdk.Client.IServiceManagement`1"></see>&lt;<see cref="T:Microsoft.Xrm.Sdk.IOrganizationService"></see>&gt;. A service management.</param>
         /// <param name="clientCredentials">Type: Returns_ClientCredentials. The logon credentials of the client.</param>
         public OrganizationServiceProxy(
-          IServiceManagement<IOrganizationServiceContract> serviceManagement,
+          IServiceManagement<IOrganizationService> serviceManagement,
           ClientCredentials clientCredentials)
-          : this(serviceManagement as IServiceConfiguration<IOrganizationServiceContract>, clientCredentials)
+          : this(serviceManagement as IServiceConfiguration<IOrganizationService>, clientCredentials)
         {
         }
 
@@ -171,7 +171,7 @@ namespace Microsoft.Xrm.Sdk.Client
 
         private async Task<Guid> CreateCoreWithContextAsync(Entity entity, CancellationToken cancellationToken)
         {
-            return await InvokeChannelAsync(channel => channel.CreateAsync(entity), cancellationToken).ConfigureAwait(false);
+            return await InvokeChannelAsync(channel => channel.CreateAsync(entity, cancellationToken), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -236,7 +236,7 @@ namespace Microsoft.Xrm.Sdk.Client
             ColumnSet columnSet,
             CancellationToken cancellationToken)
         {
-            return await InvokeChannelAsync(channel => channel.RetrieveAsync(entityName, id, columnSet), cancellationToken).ConfigureAwait(false);
+            return await InvokeChannelAsync(channel => channel.RetrieveAsync(entityName, id, columnSet, cancellationToken), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -301,7 +301,7 @@ namespace Microsoft.Xrm.Sdk.Client
 
         private async Task UpdateCoreWithContextAsync(Entity entity, CancellationToken cancellationToken)
         {
-            await InvokeChannelAsync(channel => channel.UpdateAsync(entity), cancellationToken).ConfigureAwait(false);
+            await InvokeChannelAsync(channel => channel.UpdateAsync(entity, cancellationToken), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -361,7 +361,7 @@ namespace Microsoft.Xrm.Sdk.Client
 
         private async Task DeleteCoreWithContext(string entityName, Guid id, CancellationToken cancellationToken)
         {
-            await InvokeChannelAsync(channel => channel.DeleteAsync(entityName, id), cancellationToken).ConfigureAwait(false);
+            await InvokeChannelAsync(channel => channel.DeleteAsync(entityName, id, cancellationToken), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -422,7 +422,7 @@ namespace Microsoft.Xrm.Sdk.Client
         private async Task<OrganizationResponse> ExecuteCoreWithContextAsync(
             OrganizationRequest request, CancellationToken cancellationToken)
         {
-            return await InvokeChannelAsync(channel => channel.ExecuteAsync(request), cancellationToken).ConfigureAwait(false);
+            return await InvokeChannelAsync(channel => channel.ExecuteAsync(request, cancellationToken), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -489,7 +489,7 @@ namespace Microsoft.Xrm.Sdk.Client
             EntityReferenceCollection relatedEntities,
             CancellationToken cancellationToken)
         {
-            await InvokeChannelAsync(channel => channel.AssociateAsync(entityName, entityId, relationship, relatedEntities), cancellationToken).ConfigureAwait(false);
+            await InvokeChannelAsync(channel => channel.AssociateAsync(entityName, entityId, relationship, relatedEntities, cancellationToken), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -559,7 +559,7 @@ namespace Microsoft.Xrm.Sdk.Client
             EntityReferenceCollection relatedEntities,
             CancellationToken cancellationToken)
         {
-            await InvokeChannelAsync(channel => channel.DisassociateAsync(entityName, entityId, relationship, relatedEntities), cancellationToken).ConfigureAwait(false);
+            await InvokeChannelAsync(channel => channel.DisassociateAsync(entityName, entityId, relationship, relatedEntities, cancellationToken), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -624,7 +624,7 @@ namespace Microsoft.Xrm.Sdk.Client
 
         private async Task<EntityCollection> RetrieveMultipleCoreWithContextAsync(QueryBase query, CancellationToken cancellationToken)
         {
-            return await InvokeChannelAsync(channel => channel.RetrieveMultipleAsync(query), cancellationToken).ConfigureAwait(false);
+            return await InvokeChannelAsync(channel => channel.RetrieveMultipleAsync(query, cancellationToken), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>

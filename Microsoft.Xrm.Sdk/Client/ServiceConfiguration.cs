@@ -1063,6 +1063,7 @@ namespace Microsoft.Xrm.Sdk.Client
                 /*if (this.ClaimsEnabledService || this.AuthenticationType == AuthenticationProviderType.LiveId)
                     channelFactory.ConfigureChannelFactory<TService>();
                 channelFactory.Credentials.IssuedToken.CacheIssuedTokens = true;*/
+                LocalCancellationContract.Configure(channelFactory.Endpoint.Contract);
                 return channelFactory;
             }
         }

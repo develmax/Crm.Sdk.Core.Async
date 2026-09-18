@@ -68,7 +68,7 @@ internal static class Program
                     await network.WriteAsync(response, 0, response.Length);
                 }
             });
-            var config = ServiceConfigurationFactory.CreateConfiguration<IOrganizationServiceContract>(url);
+            var config = ServiceConfigurationFactory.CreateConfiguration<IOrganizationService>(url);
             foreach (var endpoint in config.ServiceEndpoints.Values)
             {
                 var binding = (BasicHttpBinding)endpoint.Binding;

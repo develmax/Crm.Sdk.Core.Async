@@ -118,7 +118,7 @@ public class TransportTests
 #if FULL_SDK
     private static OrganizationServiceProxy CreateProxy(LoopbackServer server)
     {
-        var config = ServiceConfigurationFactory.CreateConfiguration<IOrganizationServiceContract>(new Uri(server.Url));
+        var config = ServiceConfigurationFactory.CreateConfiguration<IOrganizationService>(new Uri(server.Url));
         foreach (var endpoint in config.ServiceEndpoints.Values)
         {
             var binding = (BasicHttpBinding)endpoint.Binding;
@@ -141,6 +141,20 @@ public class TransportTests
         Assert.Equal(2, server.Requests.Count);
         Assert.Single(server.Requests.Select(r => r.Connection).Distinct());
         Assert.All(server.Requests, r => { Assert.Contains(id.ToString(), r.Body); Assert.DoesNotContain("cancellationToken", r.Body); });
+    }
+
+    [Fact]
+    public async Task WcfTimeoutCanChangeBetweenCallsOnOneConnection()
+    {
+        var id = Guid.NewGuid();
+        using var server = new LoopbackServer(async _ => { await Task.Delay(100); return new Reply(200, Soap(id)); });
+        using var proxy = CreateProxy(server);
+        Assert.Equal(id, await proxy.CreateAsync(new Entity("account"), CancellationToken.None));
+        proxy.Timeout = TimeSpan.FromSeconds(10);
+        Assert.Equal(id, await proxy.CreateAsync(new Entity("account"), CancellationToken.None));
+        proxy.Timeout = TimeSpan.FromSeconds(5);
+        Assert.Equal(id, await proxy.CreateAsync(new Entity("account"), CancellationToken.None));
+        Assert.Single(server.Requests.Select(r => r.Connection).Distinct());
     }
 
     [Fact]
