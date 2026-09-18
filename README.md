@@ -1,5 +1,7 @@
 # Crm.Sdk.Core.Async
 
+![Logo of the project](https://raw.githubusercontent.com/develmax/Crm.Sdk.Core.Async/master/Crm.Sdk.Core.Async.Package/icon.png)
+
 Async SDK for Microsoft Dynamics CRM on-premises, including CRM 2015.
 
 [![NuGet](https://img.shields.io/nuget/v/Crm.Sdk.Core.svg)](https://www.nuget.org/packages/Crm.Sdk.Core/)
