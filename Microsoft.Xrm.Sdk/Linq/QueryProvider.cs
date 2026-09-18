@@ -1,4 +1,4 @@
-﻿using Microsoft.Xrm.Sdk.Client;
+using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Query;
 using System;
@@ -633,45 +633,21 @@ label_16:
     [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
     private Delegate CompileExpression(LambdaExpression expression)
     {
-      try
-      {
-        new ReflectionPermission(ReflectionPermissionFlag.RestrictedMemberAccess).Assert();
-        return expression.Compile();
-      }
-      finally
-      {
-        CodeAccessPermission.RevertAssert();
-      }
+      return expression.Compile();
     }
 
     [SecuritySafeCritical]
     [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
     private object DynamicInvoke(Delegate project, params object[] args)
     {
-      try
-      {
-        new ReflectionPermission(ReflectionPermissionFlag.RestrictedMemberAccess).Assert();
-        return project.DynamicInvoke(args);
-      }
-      finally
-      {
-        CodeAccessPermission.RevertAssert();
-      }
+      return project.DynamicInvoke(args);
     }
 
     [SecuritySafeCritical]
     [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
     private object ConstructorInvoke(ConstructorInfo ci, object[] parameters)
     {
-      try
-      {
-        new ReflectionPermission(ReflectionPermissionFlag.MemberAccess).Assert();
-        return ci.Invoke(parameters);
-      }
-      finally
-      {
-        CodeAccessPermission.RevertAssert();
-      }
+      return ci.Invoke(parameters);
     }
 
     private Entity AttachToContext(Entity entity)
@@ -1802,30 +1778,14 @@ label_16:
     [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
     private object GetFieldValue(FieldInfo fieldInfo, object target)
     {
-      try
-      {
-        new ReflectionPermission(ReflectionPermissionFlag.RestrictedMemberAccess).Assert();
-        return fieldInfo.GetValue(target);
-      }
-      finally
-      {
-        CodeAccessPermission.RevertAssert();
-      }
+      return fieldInfo.GetValue(target);
     }
 
     [SecuritySafeCritical]
     [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
     private object GetPropertyValue(PropertyInfo propertyInfo, object target)
     {
-      try
-      {
-        new ReflectionPermission(ReflectionPermissionFlag.RestrictedMemberAccess).Assert();
-        return propertyInfo.GetValue(target, (object[]) null);
-      }
-      finally
-      {
-        CodeAccessPermission.RevertAssert();
-      }
+      return propertyInfo.GetValue(target, (object[]) null);
     }
 
     private object TranslateExpressionToConditionValue(

@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 
 namespace Microsoft.Xrm.Sdk.Client
 {
-    internal sealed class OrganizationServiceContextInitializer : ServiceContextInitializer<IOrganizationService>
+    internal sealed class OrganizationServiceContextInitializer : ServiceContextInitializer<IOrganizationServiceContract>
     {
         public OrganizationServiceContextInitializer(OrganizationServiceProxy proxy)
-          : base((ServiceProxy<IOrganizationService>)proxy)
+          : base((ServiceProxy<IOrganizationServiceContract>)proxy)
         {
             this.Initialize();
         }

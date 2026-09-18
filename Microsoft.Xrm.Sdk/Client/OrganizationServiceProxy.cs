@@ -1,4 +1,4 @@
-﻿using Microsoft.Xrm.Sdk.Query;
+using Microsoft.Xrm.Sdk.Query;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -15,8 +15,36 @@ namespace Microsoft.Xrm.Sdk.Client
 {
     /// <summary>Implements <see cref="T:Microsoft.Xrm.Sdk.IOrganizationService"></see> and provides an authenticated WCF channel to the organization service.</summary>
     [SuppressMessage("Microsoft.Security", "CA9881:ClassesShouldBeSealed", Justification = "This class need to be instantiated by clients and be able to derive from it.")]
-    public class OrganizationServiceProxy : ServiceProxy<IOrganizationService>, IOrganizationService
+    public class OrganizationServiceProxy : ServiceProxy<IOrganizationServiceContract>, IOrganizationService
     {
+        private async Task<T> InvokeChannelAsync<T>(Func<IOrganizationServiceContract, Task<T>> operation, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var channel = ServiceChannel.Channel;
+            // Capture this operation's channel, never a later channel from the pool.
+            using var registration = cancellationToken.Register(() => ((ICommunicationObject)channel).Abort());
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                Task<T> pending;
+                using (new OrganizationServiceContextInitializer(this))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    pending = operation(channel);
+                }
+                // OperationContextScope must be disposed on the thread that created it.
+                return await pending.ConfigureAwait(false);
+            }
+            catch (Exception) when (cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
+        }
+
+        private Task InvokeChannelAsync(Func<IOrganizationServiceContract, Task> operation, CancellationToken cancellationToken)
+        {
+            return InvokeChannelAsync(async channel => { await operation(channel).ConfigureAwait(false); return true; }, cancellationToken);
+        }
         private string _xrmSdkAssemblyFileVersion;
 
         internal bool OfflinePlayback { get; set; }
@@ -61,7 +89,7 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="serviceConfiguration">Type: <see cref="T:Microsoft.Xrm.Sdk.Client.IServiceConfiguration`1"></see>&lt;<see cref="T:Microsoft.Xrm.Sdk.IOrganizationService"></see>&gt;. A service configuration.</param>
         /// <param name="securityTokenResponse">Type: <see cref="T:Microsoft.Xrm.Sdk.Client.SecurityTokenResponse"></see>. A security token response.</param>
         /*public OrganizationServiceProxy(
-          IServiceConfiguration<IOrganizationService> serviceConfiguration,
+          IServiceConfiguration<IOrganizationServiceContract> serviceConfiguration,
           SecurityTokenResponse securityTokenResponse)
           : base(serviceConfiguration, securityTokenResponse)
         {
@@ -71,7 +99,7 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="serviceConfiguration">Type: <see cref="T:Microsoft.Xrm.Sdk.Client.IServiceConfiguration`1"></see>&lt;<see cref="T:Microsoft.Xrm.Sdk.IOrganizationService"></see>&gt;. A service configuration.</param>
         /// <param name="clientCredentials">Type: Returns_ClientCredentials. The logon credentials of the client.</param>
         public OrganizationServiceProxy(
-          IServiceConfiguration<IOrganizationService> serviceConfiguration,
+          IServiceConfiguration<IOrganizationServiceContract> serviceConfiguration,
           ClientCredentials clientCredentials)
           : base(serviceConfiguration, clientCredentials)
         {
@@ -81,9 +109,9 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="serviceManagement">Type: <see cref="T:Microsoft.Xrm.Sdk.Client.IServiceManagement`1"></see>&lt;<see cref="T:Microsoft.Xrm.Sdk.IOrganizationService"></see>&gt;. A service management.</param>
         /// <param name="securityTokenResponse">Type: <see cref="T:Microsoft.Xrm.Sdk.Client.SecurityTokenResponse"></see>. A security token response.</param>
         /*public OrganizationServiceProxy(
-          IServiceManagement<IOrganizationService> serviceManagement,
+          IServiceManagement<IOrganizationServiceContract> serviceManagement,
           SecurityTokenResponse securityTokenResponse)
-          : this(serviceManagement as IServiceConfiguration<IOrganizationService>, securityTokenResponse)
+          : this(serviceManagement as IServiceConfiguration<IOrganizationServiceContract>, securityTokenResponse)
         {
         }*/
 
@@ -91,9 +119,9 @@ namespace Microsoft.Xrm.Sdk.Client
         /// <param name="serviceManagement">Type: <see cref="T:Microsoft.Xrm.Sdk.Client.IServiceManagement`1"></see>&lt;<see cref="T:Microsoft.Xrm.Sdk.IOrganizationService"></see>&gt;. A service management.</param>
         /// <param name="clientCredentials">Type: Returns_ClientCredentials. The logon credentials of the client.</param>
         public OrganizationServiceProxy(
-          IServiceManagement<IOrganizationService> serviceManagement,
+          IServiceManagement<IOrganizationServiceContract> serviceManagement,
           ClientCredentials clientCredentials)
-          : this(serviceManagement as IServiceConfiguration<IOrganizationService>, clientCredentials)
+          : this(serviceManagement as IServiceConfiguration<IOrganizationServiceContract>, clientCredentials)
         {
         }
 
@@ -143,8 +171,7 @@ namespace Microsoft.Xrm.Sdk.Client
 
         private async Task<Guid> CreateCoreWithContextAsync(Entity entity, CancellationToken cancellationToken)
         {
-            using (new OrganizationServiceContextInitializer(this))
-                return await this.ServiceChannel.Channel.CreateAsync(entity, cancellationToken);
+            return await InvokeChannelAsync(channel => channel.CreateAsync(entity), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -157,38 +184,35 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    cancellationToken.Register(() =>
-                    {
-                        this.ServiceChannel.Abort();
-                    });
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     return await CreateCoreWithContextAsync(entity, cancellationToken);
                 }
                 catch (MessageSecurityException ex)
                 {
                     forceClose = true;
-                    retry = this.ShouldRetry(ex, retry);
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (EndpointNotFoundException ex)
                 {
                     forceClose = true;
-                    retry = new bool?(this.HandleFailover(retry));
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (TimeoutException ex)
                 {
                     forceClose = true;
-                    retry = new bool?(this.HandleFailover(retry));
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (FaultException<OrganizationServiceFault> ex)
                 {
                     forceClose = true;
-                    retry = this.HandleFailover((BaseServiceFault)ex.Detail, retry);
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
@@ -212,8 +236,7 @@ namespace Microsoft.Xrm.Sdk.Client
             ColumnSet columnSet,
             CancellationToken cancellationToken)
         {
-            using (new OrganizationServiceContextInitializer(this))
-                return await this.ServiceChannel.Channel.RetrieveAsync(entityName, id, columnSet, cancellationToken);
+            return await InvokeChannelAsync(channel => channel.RetrieveAsync(entityName, id, columnSet), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -230,10 +253,7 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    cancellationToken.Register(() =>
-                    {
-                        this.ServiceChannel.Abort();
-                    });
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     return await RetrieveCoreWithContextAsync(entityName, id, columnSet, cancellationToken);
                 }
@@ -281,10 +301,7 @@ namespace Microsoft.Xrm.Sdk.Client
 
         private async Task UpdateCoreWithContextAsync(Entity entity, CancellationToken cancellationToken)
         {
-            using (new OrganizationServiceContextInitializer(this))
-            {
-                await this.ServiceChannel.Channel.UpdateAsync(entity, cancellationToken);
-            }
+            await InvokeChannelAsync(channel => channel.UpdateAsync(entity), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -296,10 +313,7 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    cancellationToken.Register(() =>
-                    {
-                        this.ServiceChannel.Abort();
-                    });
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     await UpdateCoreWithContextAsync(entity, cancellationToken);
                     break;
@@ -307,28 +321,28 @@ namespace Microsoft.Xrm.Sdk.Client
                 catch (MessageSecurityException ex)
                 {
                     forceClose = true;
-                    retry = this.ShouldRetry(ex, retry);
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (EndpointNotFoundException ex)
                 {
                     forceClose = true;
-                    retry = new bool?(this.HandleFailover(retry));
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (TimeoutException ex)
                 {
                     forceClose = true;
-                    retry = new bool?(this.HandleFailover(retry));
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (FaultException<OrganizationServiceFault> ex)
                 {
                     forceClose = true;
-                    retry = this.HandleFailover((BaseServiceFault)ex.Detail, retry);
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
@@ -347,10 +361,7 @@ namespace Microsoft.Xrm.Sdk.Client
 
         private async Task DeleteCoreWithContext(string entityName, Guid id, CancellationToken cancellationToken)
         {
-            using (new OrganizationServiceContextInitializer(this))
-            {
-                await this.ServiceChannel.Channel.DeleteAsync(entityName, id, cancellationToken);
-            }
+            await InvokeChannelAsync(channel => channel.DeleteAsync(entityName, id), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -362,10 +373,7 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    cancellationToken.Register(() =>
-                    {
-                        this.ServiceChannel.Abort();
-                    });
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     await DeleteCoreWithContext(entityName, id, cancellationToken);
                     break;
@@ -373,28 +381,28 @@ namespace Microsoft.Xrm.Sdk.Client
                 catch (MessageSecurityException ex)
                 {
                     forceClose = true;
-                    retry = this.ShouldRetry(ex, retry);
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (EndpointNotFoundException ex)
                 {
                     forceClose = true;
-                    retry = new bool?(this.HandleFailover(retry));
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (TimeoutException ex)
                 {
                     forceClose = true;
-                    retry = new bool?(this.HandleFailover(retry));
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (FaultException<OrganizationServiceFault> ex)
                 {
                     forceClose = true;
-                    retry = this.HandleFailover((BaseServiceFault)ex.Detail, retry);
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
@@ -414,8 +422,7 @@ namespace Microsoft.Xrm.Sdk.Client
         private async Task<OrganizationResponse> ExecuteCoreWithContextAsync(
             OrganizationRequest request, CancellationToken cancellationToken)
         {
-            using (new OrganizationServiceContextInitializer(this))
-                return await this.ServiceChannel.Channel.ExecuteAsync(request, cancellationToken);
+            return await InvokeChannelAsync(channel => channel.ExecuteAsync(request), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -429,38 +436,35 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    cancellationToken.Register(() =>
-                    {
-                        this.ServiceChannel.Abort();
-                    });
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     return await ExecuteCoreWithContextAsync(request, cancellationToken);
                 }
                 catch (MessageSecurityException ex)
                 {
                     forceClose = true;
-                    retry = this.ShouldRetry(ex, retry);
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (EndpointNotFoundException ex)
                 {
                     forceClose = true;
-                    retry = new bool?(this.HandleFailover(retry));
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (TimeoutException ex)
                 {
                     forceClose = true;
-                    retry = new bool?(this.HandleFailover(retry));
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (FaultException<OrganizationServiceFault> ex)
                 {
                     forceClose = true;
-                    retry = this.HandleFailover((BaseServiceFault)ex.Detail, retry);
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
@@ -485,10 +489,7 @@ namespace Microsoft.Xrm.Sdk.Client
             EntityReferenceCollection relatedEntities,
             CancellationToken cancellationToken)
         {
-            using (new OrganizationServiceContextInitializer(this))
-            {
-                await this.ServiceChannel.Channel.AssociateAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
-            }
+            await InvokeChannelAsync(channel => channel.AssociateAsync(entityName, entityId, relationship, relatedEntities), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -505,10 +506,7 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    cancellationToken.Register(() =>
-                    {
-                        this.ServiceChannel.Abort();
-                    });
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     await AssociateCoreWithContextAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
                     break;
@@ -516,28 +514,28 @@ namespace Microsoft.Xrm.Sdk.Client
                 catch (MessageSecurityException ex)
                 {
                     forceClose = true;
-                    retry = this.ShouldRetry(ex, retry);
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (EndpointNotFoundException ex)
                 {
                     forceClose = true;
-                    retry = new bool?(this.HandleFailover(retry));
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (TimeoutException ex)
                 {
                     forceClose = true;
-                    retry = new bool?(this.HandleFailover(retry));
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (FaultException<OrganizationServiceFault> ex)
                 {
                     forceClose = true;
-                    retry = this.HandleFailover((BaseServiceFault)ex.Detail, retry);
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
@@ -561,10 +559,7 @@ namespace Microsoft.Xrm.Sdk.Client
             EntityReferenceCollection relatedEntities,
             CancellationToken cancellationToken)
         {
-            using (new OrganizationServiceContextInitializer(this))
-            {
-                await this.ServiceChannel.Channel.DisassociateAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
-            }
+            await InvokeChannelAsync(channel => channel.DisassociateAsync(entityName, entityId, relationship, relatedEntities), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -581,10 +576,7 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    cancellationToken.Register(() =>
-                    {
-                        this.ServiceChannel.Abort();
-                    });
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     await DisassociateCoreWithContextAsync(entityName, entityId, relationship, relatedEntities, cancellationToken);
                     break;
@@ -592,28 +584,28 @@ namespace Microsoft.Xrm.Sdk.Client
                 catch (MessageSecurityException ex)
                 {
                     forceClose = true;
-                    retry = this.ShouldRetry(ex, retry);
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (EndpointNotFoundException ex)
                 {
                     forceClose = true;
-                    retry = new bool?(this.HandleFailover(retry));
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (TimeoutException ex)
                 {
                     forceClose = true;
-                    retry = new bool?(this.HandleFailover(retry));
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
                 catch (FaultException<OrganizationServiceFault> ex)
                 {
                     forceClose = true;
-                    retry = this.HandleFailover((BaseServiceFault)ex.Detail, retry);
+                    retry = false;
                     if (!retry.GetValueOrDefault())
                         throw;
                 }
@@ -632,10 +624,7 @@ namespace Microsoft.Xrm.Sdk.Client
 
         private async Task<EntityCollection> RetrieveMultipleCoreWithContextAsync(QueryBase query, CancellationToken cancellationToken)
         {
-            using (new OrganizationServiceContextInitializer(this))
-            {
-                return await this.ServiceChannel.Channel.RetrieveMultipleAsync(query, cancellationToken);
-            }
+            return await InvokeChannelAsync(channel => channel.RetrieveMultipleAsync(query), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>internal</summary>
@@ -648,10 +637,7 @@ namespace Microsoft.Xrm.Sdk.Client
                 bool forceClose = false;
                 try
                 {
-                    cancellationToken.Register(() =>
-                    {
-                        this.ServiceChannel.Abort();
-                    });
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     return await RetrieveMultipleCoreWithContextAsync(query, cancellationToken);
                 }

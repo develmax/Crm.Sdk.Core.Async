@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 //using System.IdentityModel.Tokens;
 using System.Net;
@@ -11,11 +11,11 @@ using System.Text;
 
 namespace Microsoft.Xrm.Sdk.Client
 {
-    internal sealed class OrganizationServiceConfiguration : IServiceConfiguration<IOrganizationService>, /*IWebAuthentication<IOrganizationService>,*/ IServiceManagement<IOrganizationService>/*, IEndpointSwitch*/
+    internal sealed class OrganizationServiceConfiguration : IServiceConfiguration<IOrganizationServiceContract>, /*IWebAuthentication<IOrganizationServiceContract>,*/ IServiceManagement<IOrganizationServiceContract>/*, IEndpointSwitch*/
     {
         private object _lockObject = new object();
         //private const string XrmServicesRoot = "xrmservices/";
-        private ServiceConfiguration<IOrganizationService> service;
+        private ServiceConfiguration<IOrganizationServiceContract> service;
 
         private OrganizationServiceConfiguration()
         {
@@ -33,7 +33,7 @@ namespace Microsoft.Xrm.Sdk.Client
         {
             try
             {
-                this.service = new ServiceConfiguration<IOrganizationService>(serviceUri, true);
+                this.service = new ServiceConfiguration<IOrganizationServiceContract>(serviceUri, true);
                 if (enableProxyTypes && assembly != (Assembly)null)
                 {
                     this.EnableProxyTypes(assembly);
@@ -61,8 +61,8 @@ namespace Microsoft.Xrm.Sdk.Client
             ClientExceptionHelper.ThrowIfNull((object)this.CurrentServiceEndpoint, "CurrentServiceEndpoint");
             lock (this._lockObject)
             {
-                if(this.CurrentServiceEndpoint.EndpointBehaviors.TryGetValue(typeof(ProxyTypesBehavior), out IEndpointBehavior proxyTypesBehavior))
-                    this.CurrentServiceEndpoint.EndpointBehaviors.Remove((IEndpointBehavior)proxyTypesBehavior);
+                if(this.CurrentServiceEndpoint.EndpointBehaviors.Contains(typeof(ProxyTypesBehavior)))
+                    this.CurrentServiceEndpoint.EndpointBehaviors.Remove(typeof(ProxyTypesBehavior));
                 this.CurrentServiceEndpoint.EndpointBehaviors.Add((IEndpointBehavior)new ProxyTypesBehavior());
             }
         }
@@ -73,8 +73,8 @@ namespace Microsoft.Xrm.Sdk.Client
             ClientExceptionHelper.ThrowIfNull((object)this.CurrentServiceEndpoint, "CurrentServiceEndpoint");
             lock (this._lockObject)
             {
-                if (this.CurrentServiceEndpoint.EndpointBehaviors.TryGetValue(typeof(ProxyTypesBehavior), out IEndpointBehavior proxyTypesBehavior))
-                    this.CurrentServiceEndpoint.EndpointBehaviors.Remove((IEndpointBehavior)proxyTypesBehavior);
+                if (this.CurrentServiceEndpoint.EndpointBehaviors.Contains(typeof(ProxyTypesBehavior)))
+                    this.CurrentServiceEndpoint.EndpointBehaviors.Remove(typeof(ProxyTypesBehavior));
                 this.CurrentServiceEndpoint.EndpointBehaviors.Add((IEndpointBehavior)new ProxyTypesBehavior(assembly));
             }
         }
@@ -135,18 +135,18 @@ namespace Microsoft.Xrm.Sdk.Client
             }
         }*/
 
-        public ChannelFactory<IOrganizationService> CreateChannelFactory()
+        public ChannelFactory<IOrganizationServiceContract> CreateChannelFactory()
         {
             return this.service.CreateChannelFactory(ClientAuthenticationType.Kerberos);
         }
 
-        public ChannelFactory<IOrganizationService> CreateChannelFactory(
+        public ChannelFactory<IOrganizationServiceContract> CreateChannelFactory(
           ClientAuthenticationType clientAuthenticationType)
         {
             return this.service.CreateChannelFactory(clientAuthenticationType);
         }
 
-        public ChannelFactory<IOrganizationService> CreateChannelFactory(
+        public ChannelFactory<IOrganizationServiceContract> CreateChannelFactory(
           ClientCredentials clientCredentials)
         {
             return this.service.CreateChannelFactory(clientCredentials);
@@ -226,7 +226,7 @@ namespace Microsoft.Xrm.Sdk.Client
             Uri serviceUri1 = OrganizationServiceConfiguration.RemoveOrgName(serviceUri);
             if (serviceUri1 != (Uri)null)
             {
-                this.service = new ServiceConfiguration<IOrganizationService>(serviceUri1);
+                this.service = new ServiceConfiguration<IOrganizationServiceContract>(serviceUri1);
                 if (this.service != null && this.service.ServiceEndpoints != null)
                 {
                     foreach (KeyValuePair<string, ServiceEndpoint> serviceEndpoint in (Dictionary<string, ServiceEndpoint>)this.service.ServiceEndpoints)

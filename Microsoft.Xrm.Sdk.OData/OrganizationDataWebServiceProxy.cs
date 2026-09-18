@@ -1,4 +1,4 @@
-﻿using Microsoft.Xrm.Sdk.OData.NtlmHttp;
+using Microsoft.Xrm.Sdk.OData.NtlmHttp;
 using Microsoft.Xrm.Sdk.OData.Query;
 using Microsoft.Xrm.Sdk.OData.Utility;
 using Newtonsoft.Json;      // Used in the REST methods
@@ -19,7 +19,7 @@ using System.Xml.Linq;
 
 namespace Microsoft.Xrm.Sdk.OData
 {
-    public class OrganizationDataWebServiceProxy
+    public class OrganizationDataWebServiceProxy : IDisposable
     {
         #region class members
 
@@ -82,8 +82,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 content.Append("</s:Envelope>");
 
                 // Send the request asychronously and wait for the response.
-                HttpResponseMessage httpResponse;
-                httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
+                using HttpResponseMessage httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
 
                 if (httpResponse.IsSuccessStatusCode)
                 {
@@ -91,11 +90,11 @@ namespace Microsoft.Xrm.Sdk.OData
                 }
                 else
                 {
-                    OrganizationServiceFault fault = RestoreError(httpResponse);
+                    OrganizationServiceFault fault = await RestoreErrorAsync(httpResponse);
                     if (!String.IsNullOrEmpty(fault.Message))
                         throw fault;
                     else
-                        throw new Exception(httpResponse.Content.ReadAsStringAsync().Result);
+                        throw new Exception(await httpResponse.Content.ReadAsStringAsync());
                 }
             }
         }
@@ -121,14 +120,13 @@ namespace Microsoft.Xrm.Sdk.OData
                 content.Append("</s:Envelope>");
 
                 // Send the request asychronously and wait for the response.
-                HttpResponseMessage httpResponse;
-                httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
+                using HttpResponseMessage httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
 
                 Guid createdRecordId = Guid.Empty;
                 if (httpResponse.IsSuccessStatusCode)
                 {
                     // Obtain Guid values from result.
-                    XDocument xdoc = XDocument.Parse(httpResponse.Content.ReadAsStringAsync().Result, LoadOptions.None);
+                    XDocument xdoc = XDocument.Parse(await httpResponse.Content.ReadAsStringAsync(), LoadOptions.None);
                     foreach (var result in xdoc.Descendants(Util.ns.d + "CreateResponse"))
                     {
                         createdRecordId = Util.LoadFromXml<Guid>(result);
@@ -136,11 +134,11 @@ namespace Microsoft.Xrm.Sdk.OData
                 }
                 else
                 {
-                    OrganizationServiceFault fault = RestoreError(httpResponse);
+                    OrganizationServiceFault fault = await RestoreErrorAsync(httpResponse);
                     if (!String.IsNullOrEmpty(fault.Message))
                         throw fault;
                     else
-                        throw new Exception(httpResponse.Content.ReadAsStringAsync().Result);
+                        throw new Exception(await httpResponse.Content.ReadAsStringAsync());
                 }
 
                 return createdRecordId;
@@ -169,8 +167,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 content.Append("</s:Envelope>");
 
                 // Send the request asychronously and wait for the response.
-                HttpResponseMessage httpResponse;
-                httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
+                using HttpResponseMessage httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
 
                 if (httpResponse.IsSuccessStatusCode)
                 {
@@ -178,11 +175,11 @@ namespace Microsoft.Xrm.Sdk.OData
                 }
                 else
                 {
-                    OrganizationServiceFault fault = RestoreError(httpResponse);
+                    OrganizationServiceFault fault = await RestoreErrorAsync(httpResponse);
                     if (!String.IsNullOrEmpty(fault.Message))
                         throw fault;
                     else
-                        throw new Exception(httpResponse.Content.ReadAsStringAsync().Result);
+                        throw new Exception(await httpResponse.Content.ReadAsStringAsync());
                 }
             }
         }
@@ -214,8 +211,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 content.Append("</s:Envelope>");
 
                 // Send the request asychronously and wait for the response.
-                HttpResponseMessage httpResponse;
-                httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
+                using HttpResponseMessage httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
 
                 if (httpResponse.IsSuccessStatusCode)
                 {
@@ -223,11 +219,11 @@ namespace Microsoft.Xrm.Sdk.OData
                 }
                 else
                 {
-                    OrganizationServiceFault fault = RestoreError(httpResponse);
+                    OrganizationServiceFault fault = await RestoreErrorAsync(httpResponse);
                     if (!String.IsNullOrEmpty(fault.Message))
                         throw fault;
                     else
-                        throw new Exception(httpResponse.Content.ReadAsStringAsync().Result);
+                        throw new Exception(await httpResponse.Content.ReadAsStringAsync());
                 }
 
 
@@ -256,8 +252,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 content.Append("</s:Envelope>");
 
                 // Send the request asychronously and wait for the response.
-                HttpResponseMessage httpResponse;
-                httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
+                using HttpResponseMessage httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
 
                 if (httpResponse.IsSuccessStatusCode)
                 {
@@ -271,14 +266,14 @@ namespace Microsoft.Xrm.Sdk.OData
                 {
                     // This is the fix for issue that if the response is not an XML, this will throw XML parse error, and hide the original error
                     // May need to redo this when applying new version of this file
-                    OrganizationServiceFault fault = RestoreError(httpResponse);
+                    OrganizationServiceFault fault = await RestoreErrorAsync(httpResponse);
                     if (fault != null)
                     {
                         throw fault;
                     }
                     else
                     {
-                        throw new Exception(httpResponse.Content.ReadAsStringAsync().Result);
+                        throw new Exception(await httpResponse.Content.ReadAsStringAsync());
                     }
                 }
             }
@@ -309,8 +304,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 content.Append("</s:Envelope>");
 
                 // Send the request asychronously and wait for the response.
-                HttpResponseMessage httpResponse;
-                httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
+                using HttpResponseMessage httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
 
                 Entity Entity = new Entity();
 
@@ -318,7 +312,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 if (httpResponse.IsSuccessStatusCode)
                 {
                     // Extract Entity from result.
-                    XDocument xdoc = XDocument.Parse(httpResponse.Content.ReadAsStringAsync().Result, LoadOptions.None);
+                    XDocument xdoc = XDocument.Parse(await httpResponse.Content.ReadAsStringAsync(), LoadOptions.None);
                     foreach (var result in xdoc.Descendants(Util.ns.d + "RetrieveResult"))
                     {
                         Entity = Entity.LoadFromXml(result);
@@ -326,11 +320,11 @@ namespace Microsoft.Xrm.Sdk.OData
                 }
                 else
                 {
-                    OrganizationServiceFault fault = RestoreError(httpResponse);
+                    OrganizationServiceFault fault = await RestoreErrorAsync(httpResponse);
                     if (!String.IsNullOrEmpty(fault.Message))
                         throw fault;
                     else
-                        throw new Exception(httpResponse.Content.ReadAsStringAsync().Result);
+                        throw new Exception(await httpResponse.Content.ReadAsStringAsync());
                 }
 
                 // If Entity if not casted yet, then try to cast to early-bound
@@ -362,8 +356,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 content.Append("</s:Envelope>");
 
                 // Send the request asychronously and wait for the response.
-                HttpResponseMessage httpResponse;
-                httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
+                using HttpResponseMessage httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
 
                 EntityCollection entityCollection = null;
 
@@ -371,7 +364,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 if (httpResponse.IsSuccessStatusCode)
                 {
                     // Extract EntityCollection from result.
-                    XDocument xdoc = XDocument.Parse(httpResponse.Content.ReadAsStringAsync().Result, LoadOptions.None);
+                    XDocument xdoc = XDocument.Parse(await httpResponse.Content.ReadAsStringAsync(), LoadOptions.None);
                     foreach (var results in xdoc.Descendants(Util.ns.d + "RetrieveMultipleResult"))
                     {
                         entityCollection = EntityCollection.LoadFromXml(results);
@@ -381,14 +374,14 @@ namespace Microsoft.Xrm.Sdk.OData
                 {
                     // This is the fix for issue that if the response is not an XML, this will throw XML parse error, and hide the original error
                     // May need to redo this when applying new version of this file
-                    OrganizationServiceFault fault = RestoreError(httpResponse);
+                    OrganizationServiceFault fault = await RestoreErrorAsync(httpResponse);
                     if (fault != null)
                     {
                         throw fault;
                     }
                     else
                     {
-                        throw new Exception(httpResponse.Content.ReadAsStringAsync().Result);
+                        throw new Exception(await httpResponse.Content.ReadAsStringAsync());
                     }
                 }
 
@@ -416,8 +409,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 content.Append("</s:Envelope>");
 
                 // Send the request asychronously and wait for the response.
-                HttpResponseMessage httpResponse;
-                httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
+                using HttpResponseMessage httpResponse = await SendRequestAsync(httpClient, SOAPAction, content.ToString(), cancellationToken);
 
                 if (httpResponse.IsSuccessStatusCode)
                 {
@@ -425,11 +417,11 @@ namespace Microsoft.Xrm.Sdk.OData
                 }
                 else
                 {
-                    OrganizationServiceFault fault = RestoreError(httpResponse);
+                    OrganizationServiceFault fault = await RestoreErrorAsync(httpResponse);
                     if (!String.IsNullOrEmpty(fault.Message))
                         throw fault;
                     else
-                        throw new Exception(httpResponse.Content.ReadAsStringAsync().Result);
+                        throw new Exception(await httpResponse.Content.ReadAsStringAsync());
                 }
             }
         }
@@ -469,14 +461,14 @@ namespace Microsoft.Xrm.Sdk.OData
                 httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
                 // Use PostAsync to Post data.
-                HttpResponseMessage response = await httpClient.PostAsync(ServiceUrl + restEndpoint + ODataAction, content, cancellationToken);
+                using HttpResponseMessage response = await httpClient.PostAsync(ServiceUrl + restEndpoint + ODataAction, content, cancellationToken);
 
                 // Check the response result.
                 if (response.IsSuccessStatusCode)
                 {
                     Entity result;
                     // Deserialize response to JToken 
-                    byte[] resultbytes = Encoding.UTF8.GetBytes(response.Content.ReadAsStringAsync().Result);
+                    byte[] resultbytes = Encoding.UTF8.GetBytes(await response.Content.ReadAsStringAsync());
                     using (MemoryStream ms = new MemoryStream())
                     {
                         result = (Entity)jasonSerializer.ReadObject(ms);
@@ -510,7 +502,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
                 // Use DeleteAsync to Post data.
-                HttpResponseMessage response = await httpClient.DeleteAsync(ServiceUrl + restEndpoint + ODataAction, cancellationToken);
+                using HttpResponseMessage response = await httpClient.DeleteAsync(ServiceUrl + restEndpoint + ODataAction, cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
                     throw new Exception("REST Delete failed.");
@@ -548,7 +540,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
                 // Wait for the web service response.
-                HttpResponseMessage response = await httpClient.GetAsync(ServiceUrl + restEndpoint + ODataAction, cancellationToken);
+                using HttpResponseMessage response = await httpClient.GetAsync(ServiceUrl + restEndpoint + ODataAction, cancellationToken);
 
                 // Check the response result.
                 if (response.IsSuccessStatusCode)
@@ -564,7 +556,7 @@ namespace Microsoft.Xrm.Sdk.OData
                             throw new Exception("Early-bound types must be enabled for a REST Retrieve.");
                     }
                     // Deserialize response to JToken 
-                    JToken jtoken = JObject.Parse(response.Content.ReadAsStringAsync().Result)["d"];
+                    JToken jtoken = JObject.Parse(await response.Content.ReadAsStringAsync())["d"];
                     return (Entity)JsonConvert.DeserializeObject(jtoken.ToString(), currentType.AsType());
                 }
                 else
@@ -603,7 +595,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
                 // Wait for the web service response.
-                HttpResponseMessage response = await httpClient.GetAsync(ServiceUrl + restEndpoint + ODataAction, cancellationToken);
+                using HttpResponseMessage response = await httpClient.GetAsync(ServiceUrl + restEndpoint + ODataAction, cancellationToken);
 
                 // Check the response result.
                 if (response.IsSuccessStatusCode)
@@ -623,7 +615,7 @@ namespace Microsoft.Xrm.Sdk.OData
                     }
 
                     // Deserialize response to JToken IList
-                    IList<JToken> jTokens = JObject.Parse(response.Content.ReadAsStringAsync().Result)["d"]["results"].Children().ToList();
+                    IList<JToken> jTokens = JObject.Parse(await response.Content.ReadAsStringAsync())["d"]["results"].Children().ToList();
                     foreach (JToken jToken in jTokens)
                     {
                         // Deserialize result to Type T
@@ -662,7 +654,7 @@ namespace Microsoft.Xrm.Sdk.OData
                 httpClient.DefaultRequestHeaders.Add("X-HTTP-Method", "MERGE");
 
                 // Use PostAsync to Post data.
-                HttpResponseMessage response = await httpClient.PostAsync(ServiceUrl + restEndpoint + ODataAction, content, cancellationToken);
+                using HttpResponseMessage response = await httpClient.PostAsync(ServiceUrl + restEndpoint + ODataAction, content, cancellationToken);
 
                 // Check the response result.
                 if (!response.IsSuccessStatusCode)
@@ -673,13 +665,51 @@ namespace Microsoft.Xrm.Sdk.OData
 
         #region helpercode
 
-        private HttpClient CreateHttpClient()
-        {
-            HttpMessageHandler httpMessageHandler = Credential != null
-                ? new NtlmHttpMessageHandler(new HttpClientHandler( ) { AutomaticDecompression = System.Net.DecompressionMethods.GZip, UseProxy = UseProxy}) {NetworkCredential = Credential}
-                : new HttpClientHandler() { AutomaticDecompression = System.Net.DecompressionMethods.GZip, UseProxy = UseProxy };
+        private HttpClient CreateHttpClient() { return GetPooledHttpClient(); }
+        private readonly object _transportLock = new object();
+        private HttpMessageHandler _transport;
+        private bool _disposed;
+        private NetworkCredential _transportCredential;
+        private bool _transportUseProxy;
 
-            return new HttpClient(httpMessageHandler);
+        // The handler, rather than the short-lived HttpClient wrapper, owns the
+        // authenticated connection pool. Dispose the proxy when its owner stops.
+        private HttpClient GetPooledHttpClient()
+        {
+            lock (_transportLock)
+            {
+                if (_disposed) throw new ObjectDisposedException(GetType().Name);
+                if (_transport == null)
+                {
+                    _transportCredential = Credential;
+                    _transportUseProxy = UseProxy;
+                    var handler = new HttpClientHandler
+                    {
+                        AutomaticDecompression = DecompressionMethods.GZip,
+                        UseProxy = UseProxy,
+                        AllowAutoRedirect = false
+                    };
+                    _transport = Credential == null ? (HttpMessageHandler)handler
+                        : new NtlmHttpMessageHandler(handler) { NetworkCredential = Credential };
+                }
+                else if (!ReferenceEquals(Credential, _transportCredential) || UseProxy != _transportUseProxy)
+                {
+                    throw new InvalidOperationException("Configure credentials and proxy before the first request. Create a new proxy to change them.");
+                }
+                var client = new HttpClient(_transport, disposeHandler: false);
+                if (Timeout > 0) client.Timeout = TimeSpan.FromSeconds(Timeout);
+                return client;
+            }
+        }
+
+        public void Dispose()
+        {
+            lock (_transportLock)
+            {
+                if (_disposed) return;
+                _disposed = true;
+                _transport?.Dispose();
+            }
         }
 
         // To make this project Xamarin compatible, you need to comment out this method.
@@ -726,7 +756,7 @@ namespace Microsoft.Xrm.Sdk.OData
             if (Timeout > 0)
                 httpClient.Timeout = new TimeSpan(0, 0, 0, Timeout, 0);
             // Finish setting up the HTTP request.
-            HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, ServiceUrl + webEndpoint);
+            using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, ServiceUrl + webEndpoint);
             req.Headers.Add("SOAPAction", SOAPAction);
             req.Method = HttpMethod.Post;
             req.Content = new StringContent(content);
@@ -756,13 +786,13 @@ namespace Microsoft.Xrm.Sdk.OData
             sb.Append("</s:Header>");
             return sb.ToString();
         }
-        private OrganizationServiceFault RestoreError(HttpResponseMessage httpResponse)
+        private async Task<OrganizationServiceFault> RestoreErrorAsync(HttpResponseMessage httpResponse)
         {
             // This is the fix for issue that if the response is not an XML, this will throw XML parse error, and hide the original error
             // May need to redo this when applying new version of this file
             try
             {
-                string content = httpResponse.Content.ReadAsStringAsync().Result;
+                string content = await httpResponse.Content.ReadAsStringAsync();
                 if(String.IsNullOrEmpty(content))
                 {
                     OrganizationServiceFault serviceFault = new OrganizationServiceFault();
