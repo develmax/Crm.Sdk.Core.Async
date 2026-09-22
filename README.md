@@ -17,14 +17,12 @@ Async SDK for Microsoft Dynamics CRM on-premises, including CRM 2015.
 dotnet add package Crm.Sdk.Core --version 11.0.1
 ```
 
-The 11.0.1 release is prepared in this repository; the package owner publishes it
-to NuGet separately. Until then, use the generated nupkg from a local feed.
 ADFS, Live ID and Dynamics 365 Online authentication are not implemented.
 
 ## Lite alternative
 
 [Crm.Sdk.Core.Async.Lite](https://github.com/develmax/Crm.Sdk.Core.Async.Lite)
-(package `DevelKit.Crm.Sdk.Lite`) uses direct SOAP-over-HTTP while keeping familiar
+(package `Crm.Sdk.Core.Lite`) uses direct SOAP-over-HTTP while keeping familiar
 SDK namespaces and class names, including `Microsoft.Xrm.Sdk.Entity` and
 `Microsoft.Xrm.Sdk.Client.OrganizationServiceProxy`. Its main benefit is fewer
 dependencies and no WCF channel infrastructure, not guaranteed faster CRM calls.
